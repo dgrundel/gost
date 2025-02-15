@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Test page for HTML parser">
+    <link rel="stylesheet" href="styles.css">
+    <title>HTML Parser Test Page</title>
+    <title>HTML Parser Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .test-class { color: blue; }
+    </style>
+    <script>
+        // Raw content inside script tag
+        function testFunction() {
+            var x = 5;
+            if (x < 10) {
+                return true;
+            }
+            return false;
+        }
+    </script>
+</head>
+<body>
+    <!-- Comment test -->
+    <header>
+        <h1>HTML Parser Test Page</h1>
+        <nav>
+            <ul>
+                <li><a href="#section1">Section 1</a></li>
+                <li><a href="#section2">Section 2</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Mix of self-closing and non-self-closing tags -->
+        <img src="test1.jpg" alt="Test image 1">
+        <br>
+        <img src="test2.jpg" alt="Test image 2" />
+        <br/>
+        <input type="text" value="Test input 1">
+        <input type="text" value="Test input 2" />
+        <hr>
+
+        <!-- Nested elements -->
+        <div class="container">
+            <p>This is a <strong>test</strong> paragraph with <em>various</em> inline elements.</p>
+            <p>Here's a link to <a href="https://example.com">Example</a></p>
+        </div>
+
+        <!-- Form elements -->
+        <form action="/submit" method="post">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            
+            <select name="options">
+                <option value="1">Option 1</option>
+                <option value="2">Option 2</option>
+            </select>
+
+            <textarea name="message" rows="4" cols="50">
+Default text here
+            </textarea>
+        </form>
+
+        <!-- Table -->
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Header 1</th>
+                    <th>Header 2</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Cell 1</td>
+                    <td>Cell 2</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Special characters -->
+        <p>Special characters: &lt; &gt; &amp; &quot; &apos;</p>
+
+        <!-- Empty elements -->
+        <div></div>
+        <span></span>
+
+        <!-- Custom data attributes -->
+        <div data-test="value" data-other="123"></div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Test Page</p>
+    </footer>
+</body>
+</html>
