@@ -457,6 +457,7 @@ func handleRawTextEndTagOpen(ctx *parseContext) error {
 		ctx.Tag.endTag = true
 		ctx.Tag.name.WriteRune(unicode.ToLower(ctx.Rune))
 		ctx.Temp.WriteRune(ctx.Rune)
+		ctx.State = RawTextEndTagName
 	case ctx.Rune >= 'a' && ctx.Rune <= 'z':
 		if ctx.Tag != nil {
 			return parseErr(ctx, "tag open with incomplete tag")
@@ -465,6 +466,7 @@ func handleRawTextEndTagOpen(ctx *parseContext) error {
 		ctx.Tag.endTag = true
 		ctx.Tag.name.WriteRune(ctx.Rune)
 		ctx.Temp.WriteRune(ctx.Rune)
+		ctx.State = RawTextEndTagName
 	default:
 		ctx.Buf.WriteString("</")
 		return handleRawText(ctx)

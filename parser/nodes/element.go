@@ -3,6 +3,7 @@ package nodes
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -56,7 +57,16 @@ func (t *element) OuterHTML() string {
 	builder.WriteByte('<')
 	builder.WriteString(t.name)
 
-	for key, value := range t.attributes {
+	// for consistency (for testing) always
+	// output attrs in sorted order
+	var attrKeys []string
+	for key := range t.attributes {
+		attrKeys = append(attrKeys, key)
+	}
+	slices.Sort(attrKeys)
+
+	for _, key := range attrKeys {
+		value := t.attributes[key]
 		builder.WriteByte(' ')
 		builder.WriteString(key)
 		builder.WriteString("=\"")

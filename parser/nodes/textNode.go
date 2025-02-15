@@ -1,7 +1,5 @@
 package nodes
 
-import "fmt"
-
 type TextNode interface {
 	Node
 }
@@ -33,8 +31,4 @@ func (t *textNode) Children() []Node {
 
 func (t *textNode) Append(children ...Node) {
 	// no op
-}
-
-func (t *textNode) String() string {
-	return fmt.Sprintf("\"%s\"", t.Name())
 }

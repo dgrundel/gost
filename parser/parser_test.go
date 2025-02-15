@@ -1,27 +1,28 @@
 package parser
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestParseFromFile(t *testing.T) {
+func TestParseFullDocument(t *testing.T) {
 
-// 	content, err := os.ReadFile("test.html")
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	content, err := os.ReadFile("test.html")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	document, err := Parse(string(content))
-// 	assert.NoError(t, err)
-// 	assert.NotNil(t, document)
-// 	if document != nil {
-// 		assert.Equal(t, "html", document.String())
-// 	}
-// }
+	document, err := Parse(string(content))
+	assert.NoError(t, err)
+	assert.NotNil(t, document)
+	if document != nil {
+		assert.Equal(t, "html", document.String())
+	}
+}
 
-func TestParseSmall(t *testing.T) {
+func TestParseFragment(t *testing.T) {
 
 	html := `
 	<main>
@@ -30,10 +31,15 @@ func TestParseSmall(t *testing.T) {
 	</main>
 	`
 
+	expected := `
+	<main>
+		<p class="greeting">Hello, world!</p>
+		<img alt="empty" src="#">
+	</main>
+	`
+
 	document, err := Parse(html)
 	assert.NoError(t, err)
 	assert.NotNil(t, document)
-	if document != nil {
-		assert.Equal(t, html, document.OuterHTML())
-	}
+	assert.Equal(t, expected, document.OuterHTML())
 }
