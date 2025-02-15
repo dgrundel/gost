@@ -23,6 +23,10 @@ func (t *textNode) TextContent() string {
 	return t.textContent
 }
 
+func (t *textNode) OuterHTML() string {
+	return t.textContent
+}
+
 func (t *textNode) Children() []Node {
 	return []Node{}
 }

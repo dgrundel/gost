@@ -8,6 +8,7 @@ import (
 type Node interface {
 	Name() string
 	TextContent() string
+	OuterHTML() string
 	Parent() Node
 	setParent(Node)
 	Children() []Node
@@ -37,6 +38,14 @@ func (t *node) TextContent() string {
 	return builder.String()
 }
 
+func (t *node) OuterHTML() string {
+	var builder strings.Builder
+	for _, child := range t.children {
+		builder.WriteString(child.OuterHTML())
+	}
+	return builder.String()
+}
+
 func (t *node) Parent() Node {
 	return t.parent
 }
@@ -52,7 +61,6 @@ func (t *node) Children() []Node {
 func (t *node) Append(children ...Node) {
 	t.children = append(t.children, children...)
 	for _, c := range children {
-		fmt.Println("appending", c.Name(), "to", t.Name())
 		c.setParent(t)
 	}
 }

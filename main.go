@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	parsed, err := parser.Parse([]byte("Hello, world!"))
+	parsed, err := parser.Parse("Hello, world!")
 	if err != nil {
 		panic(err)
 	}

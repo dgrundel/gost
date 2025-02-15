@@ -578,12 +578,10 @@ func applyTag(ctx *parseContext, void bool) (nodes.Element, error) {
 		ctx.Parent = ctx.Parent.Parent()
 
 	} else {
-		fmt.Println("creating new element", name)
 		elem = nodes.NewElement(name, void)
 		for name, value := range ctx.Tag.attributes {
 			elem.SetAttribute(name, value)
 		}
-		fmt.Println("before append", name, "to", ctx.Parent.Name())
 		ctx.Parent.Append(elem)
 
 		if !elem.IsVoid() {
@@ -642,7 +640,11 @@ func Parse(str string) (nodes.Document, error) {
 		}
 	}
 
-	// todo: will probably need some code here to finalize
+	if ctx.Buf.Len() > 0 {
+		text := nodes.NewTextNode(ctx.Buf.String())
+		ctx.Parent.Append(text)
+		ctx.Buf.Reset()
+	}
 
 	return document, nil
 }

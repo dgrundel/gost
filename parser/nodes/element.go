@@ -29,7 +29,6 @@ type Element interface {
 	IsVoid() bool
 	GetAttribute(string) string
 	SetAttribute(string, string)
-	OuterHTML() string
 }
 
 type element struct {
@@ -72,10 +71,7 @@ func (t *element) OuterHTML() string {
 	}
 
 	for _, child := range t.children {
-		el, ok := child.(Element)
-		if ok {
-			builder.WriteString(el.OuterHTML())
-		}
+		builder.WriteString(child.OuterHTML())
 	}
 
 	builder.WriteString("</")
