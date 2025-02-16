@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"gost/parser/nodes"
@@ -66,8 +67,8 @@ func newTag() *tag {
 type parseContext struct {
 	Rune     rune
 	Position int
-	Buf      strings.Builder
-	Temp     strings.Builder
+	Buf      bytes.Buffer
+	Temp     bytes.Buffer
 	State    ParseState
 	Parent   nodes.Node
 	Tag      *tag
@@ -445,7 +446,7 @@ func handleRawTextLessThanSign(ctx *parseContext) error {
 		ctx.Temp.Reset()
 		ctx.State = RawTextEndTagOpen
 	default:
-		ctx.Buf.WriteRune('<')
+		ctx.Buf.WriteByte('<')
 		return handleRawText(ctx)
 	}
 	return nil
@@ -488,7 +489,7 @@ func handleRawTextEndTagName(ctx *parseContext) error {
 			ctx.State = BeforeAttributeName
 		} else {
 			ctx.Buf.WriteString("</")
-			ctx.Buf.WriteString(ctx.Temp.String())
+			ctx.Buf.Write(ctx.Temp.Bytes())
 			return handleRawText(ctx)
 		}
 	case ctx.Rune == '/':
@@ -499,7 +500,7 @@ func handleRawTextEndTagName(ctx *parseContext) error {
 			ctx.State = SelfClosingStartTag
 		} else {
 			ctx.Buf.WriteString("</")
-			ctx.Buf.WriteString(ctx.Temp.String())
+			ctx.Buf.Write(ctx.Temp.Bytes())
 			return handleRawText(ctx)
 		}
 	case ctx.Rune == '>':
@@ -519,7 +520,7 @@ func handleRawTextEndTagName(ctx *parseContext) error {
 			ctx.State = Data
 		} else {
 			ctx.Buf.WriteString("</")
-			ctx.Buf.WriteString(ctx.Temp.String())
+			ctx.Buf.Write(ctx.Temp.Bytes())
 			return handleRawText(ctx)
 		}
 	case ctx.Rune >= 'A' && ctx.Rune <= 'Z':
@@ -536,7 +537,7 @@ func handleRawTextEndTagName(ctx *parseContext) error {
 		ctx.Temp.WriteRune(ctx.Rune)
 	default:
 		ctx.Buf.WriteString("</")
-		ctx.Buf.WriteString(ctx.Temp.String())
+		ctx.Buf.Write(ctx.Temp.Bytes())
 		return handleRawText(ctx)
 	}
 	return nil
@@ -549,13 +550,13 @@ func handleMarkupDeclarationOpen(ctx *parseContext) error {
 	case temp == "--":
 		ctx.Temp.Reset()
 		ctx.State = Comment
-	case strings.ToLower(temp) == "doctype":
+	case len(temp) == 7 && strings.EqualFold(temp, "doctype"):
 		// hack -- treat this like any other tag
 		if ctx.Tag != nil {
 			return parseErr(ctx, "tag open with incomplete tag")
 		}
 		ctx.Tag = newTag()
-		ctx.Tag.name.WriteRune('!')
+		ctx.Tag.name.WriteByte('!')
 		ctx.Tag.name.WriteString(strings.ToLower(temp))
 		ctx.State = BeforeAttributeName
 	case len(temp) >= 7: // len("doctype")
@@ -676,32 +677,37 @@ func Parse(reader io.RuneReader) (nodes.Document, error) {
 		Tag:    nil,
 	}
 
-	for i := 0; true; i++ {
-		r, _, err := reader.ReadRune()
-		if err == io.EOF {
-			break // End of input
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		ctx.Rune = r
-		ctx.Position = i
-		// fmt.Println(debugInfo(ctx))
-
-		err = func() (e error) {
-			defer func() {
-				if r := recover(); r != nil {
-					e = parseErr(ctx, fmt.Sprintf("panic: %v\n%s", r, debug.Stack()))
-				}
-			}()
-
-			return _parseStateHandlers[ctx.State](ctx)
+	err := func() (e error) {
+		defer func() {
+			if r := recover(); r != nil {
+				e = parseErr(ctx, fmt.Sprintf("panic: %v\n%s", r, debug.Stack()))
+			}
 		}()
-		if err != nil {
-			// fmt.Println(document.String())
-			return nil, err
+
+		for i := 0; true; i++ {
+			r, _, err := reader.ReadRune()
+			if err == io.EOF {
+				break // End of input
+			}
+			if err != nil {
+				return err
+			}
+
+			ctx.Rune = r
+			ctx.Position = i
+			// fmt.Println(debugInfo(ctx))
+
+			err = _parseStateHandlers[ctx.State](ctx)
+			if err != nil {
+				return err
+			}
 		}
+
+		return nil
+	}()
+
+	if err != nil {
+		return nil, err
 	}
 
 	if ctx.Buf.Len() > 0 {
