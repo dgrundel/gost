@@ -105,9 +105,7 @@ func (t *element) String() string {
 		"\"attrs\": " + string(attrs),
 	}
 
-	if len(t.Children()) == 0 {
-		fields = append(fields, "\"textContent\": \""+t.TextContent()+"\"")
-	} else {
+	if len(t.Children()) > 0 {
 		var children []string
 		for _, c := range t.Children() {
 			children = append(children, c.String())

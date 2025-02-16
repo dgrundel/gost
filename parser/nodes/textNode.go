@@ -1,5 +1,7 @@
 package nodes
 
+import "encoding/json"
+
 type TextNode interface {
 	Node
 }
@@ -32,4 +34,9 @@ func (t *textNode) Children() []Node {
 
 func (t *textNode) Append(children ...Node) {
 	// no op
+}
+
+func (t *textNode) String() string {
+	text, _ := json.Marshal(t.textContent)
+	return "{\"name\": \"#text\", \"textContent\": " + string(text) + "}"
 }

@@ -1,5 +1,7 @@
 package nodes
 
+import "encoding/json"
+
 type Comment interface {
 	Node
 }
@@ -32,4 +34,9 @@ func (t *comment) Children() []Node {
 
 func (t *comment) Append(children ...Node) {
 	// no op
+}
+
+func (t *comment) String() string {
+	text, _ := json.Marshal(t.textContent)
+	return "{\"name\": \"#comment\", \"comment\": " + string(text) + "}"
 }
