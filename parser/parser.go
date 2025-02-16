@@ -52,13 +52,13 @@ type tag struct {
 	name       strings.Builder
 	attrName   strings.Builder
 	attrValue  strings.Builder
-	attributes map[string]string
+	attributes nodes.Attributes
 	endTag     bool
 }
 
 func newTag() *tag {
 	return &tag{
-		attributes: make(map[string]string),
+		attributes: nodes.NewAttributes(),
 	}
 }
 
@@ -602,7 +602,7 @@ func debugInfo(ctx *parseContext) string {
 		info["tag.endTag"] = strconv.FormatBool(t.endTag)
 		info["tag.attrName"] = t.attrName.String()
 		info["tag.attrValue"] = t.attrValue.String()
-		info["tag.attributes"] = strconv.Itoa(len(t.attributes))
+		info["tag.attributes"] = strconv.Itoa(len(t.attributes.All()))
 	} else {
 		info["tag"] = "nil"
 	}
@@ -632,9 +632,12 @@ func applyTag(ctx *parseContext, void bool) (nodes.Element, error) {
 
 	} else {
 		elem = nodes.NewElement(name, void)
-		for name, value := range ctx.Tag.attributes {
-			elem.SetAttribute(name, value)
-		}
+
+		ctx.Tag.attributes.Iterator()(func(key, value string) bool {
+			elem.SetAttribute(key, value)
+			return true
+		})
+
 		ctx.Parent.Append(elem)
 
 		if !elem.IsVoid() {
@@ -656,7 +659,7 @@ func applyAttr(ctx *parseContext) error {
 	if name == "" {
 		return parseErr(ctx, "empty attr name")
 	}
-	t.attributes[name] = value
+	t.attributes.SetAttribute(name, value)
 	t.attrName.Reset()
 	t.attrValue.Reset()
 	return nil

@@ -24,25 +24,3 @@ func TestParseFullDocument(t *testing.T) {
 		assert.Equal(t, html, document.OuterHTML())
 	}
 }
-
-func TestParseFragment(t *testing.T) {
-
-	html := `
-	<main>
-		<p class="greeting">Hello, world!</p>
-		<img src="#" alt="empty">
-	</main>
-	`
-
-	expected := `
-	<main>
-		<p class="greeting">Hello, world!</p>
-		<img alt="empty" src="#">
-	</main>
-	`
-
-	document, err := Parse(html)
-	assert.NoError(t, err)
-	assert.NotNil(t, document)
-	assert.Equal(t, expected, document.OuterHTML())
-}

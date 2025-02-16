@@ -2,7 +2,6 @@ package nodes
 
 import (
 	"encoding/json"
-	"slices"
 	"strings"
 )
 
@@ -34,7 +33,7 @@ type Element interface {
 type element struct {
 	node
 	void       bool
-	attributes map[string]string
+	attributes Attributes
 }
 
 func NewElement(name string, void bool) Element {
@@ -43,7 +42,7 @@ func NewElement(name string, void bool) Element {
 	return &element{
 		node:       node{name: name},
 		void:       void,
-		attributes: make(map[string]string),
+		attributes: NewAttributes(),
 	}
 }
 
@@ -56,22 +55,18 @@ func (t *element) OuterHTML() string {
 	builder.WriteByte('<')
 	builder.WriteString(t.name)
 
-	// for consistency (for testing) always
-	// output attrs in sorted order
-	var attrKeys []string
-	for key := range t.attributes {
-		attrKeys = append(attrKeys, key)
-	}
-	slices.Sort(attrKeys)
-
-	for _, key := range attrKeys {
-		value := t.attributes[key]
+	t.attributes.Iterator()(func(key, value string) bool {
 		builder.WriteByte(' ')
 		builder.WriteString(key)
-		builder.WriteString("=\"")
-		builder.WriteString(value)
-		builder.WriteByte('"')
-	}
+
+		if value != "" {
+			builder.WriteString("=\"")
+			builder.WriteString(value)
+			builder.WriteByte('"')
+		}
+
+		return true
+	})
 
 	builder.WriteByte('>')
 
@@ -90,15 +85,15 @@ func (t *element) OuterHTML() string {
 }
 
 func (t *element) GetAttribute(name string) string {
-	return t.attributes[name]
+	return t.attributes.GetAttribute(name)
 }
 
 func (t *element) SetAttribute(name string, value string) {
-	t.attributes[name] = value
+	t.attributes.SetAttribute(name, value)
 }
 
 func (t *element) String() string {
-	attrs, _ := json.Marshal(t.attributes)
+	attrs, _ := json.Marshal(t.attributes.All())
 
 	var fields = []string{
 		"\"name\": \"" + t.Name() + "\"",
