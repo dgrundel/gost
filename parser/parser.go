@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gost/parser/nodes"
+	"io"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -665,7 +666,7 @@ func applyAttr(ctx *parseContext) error {
 	return nil
 }
 
-func Parse(str string) (nodes.Document, error) {
+func Parse(reader io.RuneReader) (nodes.Document, error) {
 
 	document := nodes.NewDocument()
 
@@ -675,13 +676,20 @@ func Parse(str string) (nodes.Document, error) {
 		Tag:    nil,
 	}
 
-	for i, r := range str {
+	for i := 0; true; i++ {
+		r, _, err := reader.ReadRune()
+		if err == io.EOF {
+			break // End of input
+		}
+		if err != nil {
+			return nil, err
+		}
+
 		ctx.Rune = r
 		ctx.Position = i
-
 		// fmt.Println(debugInfo(ctx))
 
-		err := func() (e error) {
+		err = func() (e error) {
 			defer func() {
 				if r := recover(); r != nil {
 					e = parseErr(ctx, fmt.Sprintf("panic: %v\n%s", r, debug.Stack()))
