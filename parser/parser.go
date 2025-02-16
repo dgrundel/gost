@@ -506,6 +506,11 @@ func handleRawTextEndTagName(ctx *parseContext) error {
 			return parseErr(ctx, "end tag name with nil tag")
 		}
 		if ctx.Tag.name.String() == ctx.Parent.Name() {
+			if ctx.Buf.Len() > 0 {
+				text := nodes.NewTextNode(ctx.Buf.String())
+				ctx.Parent.Append(text)
+			}
+			ctx.Buf.Reset()
 			_, err := applyTag(ctx, false)
 			if err != nil {
 				return err
