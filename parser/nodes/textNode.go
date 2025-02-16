@@ -10,11 +10,12 @@ type textNode struct {
 }
 
 func NewTextNode(text string) TextNode {
-	return &textNode{textContent: text}
-}
-
-func (t *textNode) Name() string {
-	return "#text"
+	return &textNode{
+		node: node{
+			name: "#text",
+		},
+		textContent: text,
+	}
 }
 
 func (t *textNode) TextContent() string {

@@ -30,12 +30,12 @@ const (
 	RawTextLessThanSign        ParseState = "RawTextLessThanSign"
 	RawTextEndTagOpen          ParseState = "RawTextEndTagOpen"
 	RawTextEndTagName          ParseState = "RawTextEndTagName"
-	// MarkupDeclarationOpen      ParseState = "MarkupDeclarationOpen"
+	MarkupDeclarationOpen      ParseState = "MarkupDeclarationOpen"
+	Comment                    ParseState = "Comment"
+	// CommentEndDash             ParseState = "CommentEndDash"
+	// CommentEnd                 ParseState = "CommentEnd"
 	// CommentStart               ParseState = "CommentStart"
 	// CommentStartDash           ParseState = "CommentStartDash"
-	// Comment                    ParseState = "Comment"
-	// CommentEnd                 ParseState = "CommentEnd"
-	// CommentEndDash             ParseState = "CommentEndDash"
 	// CommentEndBang             ParseState = "CommentEndBang"
 	// Doctype                    ParseState = "Doctype"
 	// BeforeDoctypeName          ParseState = "BeforeDoctypeName"
@@ -90,6 +90,8 @@ var _parseStateHandlers = map[ParseState](func(ctx *parseContext) error){
 	RawTextLessThanSign:        handleRawTextLessThanSign,
 	RawTextEndTagOpen:          handleRawTextEndTagOpen,
 	RawTextEndTagName:          handleRawTextEndTagName,
+	MarkupDeclarationOpen:      handleMarkupDeclarationOpen,
+	Comment:                    handleComment,
 }
 
 func handleData(ctx *parseContext) error {
@@ -124,9 +126,10 @@ func handleTagOpen(ctx *parseContext) error {
 	case r >= 'a' && r <= 'z':
 		ctx.Tag.name.WriteRune(r)
 		ctx.State = TagName
-	case r == '!' || r == '-': // hack
-		ctx.Tag.name.WriteRune(r)
-		ctx.State = TagName
+	case r == '!':
+		ctx.Tag = nil
+		ctx.Temp.Reset()
+		ctx.State = MarkupDeclarationOpen
 	default:
 		return parseErr(ctx, "unexpected rune")
 	}
@@ -425,12 +428,12 @@ func handleAfterAttributeValueQuoted(ctx *parseContext) error {
 }
 
 func handleRawText(ctx *parseContext) error {
-	r := ctx.Rune
-	switch r {
+	switch ctx.Rune {
 	case '<':
 		ctx.State = RawTextLessThanSign
 	default:
-		ctx.Buf.WriteRune(r)
+		ctx.Buf.WriteRune(ctx.Rune)
+		ctx.State = RawText
 	}
 	return nil
 }
@@ -533,6 +536,49 @@ func handleRawTextEndTagName(ctx *parseContext) error {
 	return nil
 }
 
+func handleMarkupDeclarationOpen(ctx *parseContext) error {
+	ctx.Temp.WriteRune(ctx.Rune)
+	temp := ctx.Temp.String()
+	switch {
+	case temp == "--":
+		ctx.Temp.Reset()
+		ctx.State = Comment
+	case strings.ToLower(temp) == "doctype":
+		// hack -- treat this like any other tag
+		if ctx.Tag != nil {
+			return parseErr(ctx, "tag open with incomplete tag")
+		}
+		ctx.Tag = newTag()
+		ctx.Tag.name.WriteRune('!')
+		ctx.Tag.name.WriteString(strings.ToLower(temp))
+		ctx.State = BeforeAttributeName
+	case len(temp) >= 7: // len("doctype")
+		return parseErr(ctx, "invalid markup declaration")
+	}
+	return nil
+}
+
+func handleComment(ctx *parseContext) error {
+	temp := ctx.Temp.String()
+	switch {
+	case temp == "--" && ctx.Rune == '>':
+		if ctx.Buf.Len() > 0 {
+			comment := nodes.NewComment(ctx.Buf.String())
+			ctx.Parent.Append(comment)
+			ctx.Buf.Reset()
+		}
+		ctx.Temp.Reset()
+		ctx.State = Data
+	case ctx.Rune == '-':
+		ctx.Temp.WriteRune(ctx.Rune)
+	default:
+		ctx.Buf.WriteString(temp)
+		ctx.Temp.Reset()
+		ctx.Buf.WriteRune(ctx.Rune)
+	}
+	return nil
+}
+
 func debugInfo(ctx *parseContext) string {
 	info := map[string]string{
 		"rune":     string(ctx.Rune),
@@ -625,7 +671,7 @@ func Parse(str string) (nodes.Document, error) {
 		ctx.Rune = r
 		ctx.Position = i
 
-		fmt.Println(debugInfo(ctx))
+		// fmt.Println(debugInfo(ctx))
 
 		err := func() (e error) {
 			defer func() {
@@ -637,7 +683,7 @@ func Parse(str string) (nodes.Document, error) {
 			return _parseStateHandlers[ctx.State](ctx)
 		}()
 		if err != nil {
-			fmt.Println(document.String())
+			// fmt.Println(document.String())
 			return nil, err
 		}
 	}

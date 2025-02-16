@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -14,11 +15,13 @@ func TestParseFullDocument(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	document, err := Parse(string(content))
+	html := string(content)
+	document, err := Parse(html)
 	assert.NoError(t, err)
 	assert.NotNil(t, document)
 	if document != nil {
-		assert.Equal(t, "html", document.String())
+		fmt.Println(document.String())
+		assert.Equal(t, html, document.OuterHTML())
 	}
 }
 

@@ -2,7 +2,6 @@ package nodes
 
 import (
 	"encoding/json"
-	"fmt"
 	"slices"
 	"strings"
 )
@@ -99,16 +98,22 @@ func (t *element) SetAttribute(name string, value string) {
 }
 
 func (t *element) String() string {
-	var children []string
-	for _, c := range t.children {
-		children = append(children, c.String())
-	}
-	childrenStr := strings.Join(children, ", ")
+	attrs, _ := json.Marshal(t.attributes)
 
-	attrs, err := json.Marshal(t.attributes)
-	if err != nil {
-		attrs = []byte(err.Error())
+	var fields = []string{
+		"\"name\": \"" + t.Name() + "\"",
+		"\"attrs\": " + string(attrs),
 	}
 
-	return fmt.Sprintf("{\"name\": \"%s\", \"children\": [%s], \"attributes\": %s}", t.Name(), childrenStr, attrs)
+	if len(t.Children()) == 0 {
+		fields = append(fields, "\"textContent\": \""+t.TextContent()+"\"")
+	} else {
+		var children []string
+		for _, c := range t.Children() {
+			children = append(children, c.String())
+		}
+		fields = append(fields, "\"children\": ["+strings.Join(children, ", ")+"]")
+	}
+
+	return "{" + strings.Join(fields, ", ") + "}"
 }

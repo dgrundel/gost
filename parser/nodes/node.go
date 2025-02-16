@@ -1,7 +1,6 @@
 package nodes
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -66,11 +65,19 @@ func (t *node) Append(children ...Node) {
 }
 
 func (t *node) String() string {
-	var children []string
-	for _, c := range t.children {
-		children = append(children, c.String())
+	var fields = []string{
+		"\"name\": \"" + t.Name() + "\"",
 	}
-	childrenStr := strings.Join(children, ", ")
 
-	return fmt.Sprintf("{\"name\": \"%s\", \"children\": [%s]}", t.Name(), childrenStr)
+	if len(t.Children()) == 0 {
+		fields = append(fields, "\"textContent\": \""+t.TextContent()+"\"")
+	} else {
+		var children []string
+		for _, c := range t.Children() {
+			children = append(children, c.String())
+		}
+		fields = append(fields, "\"children\": ["+strings.Join(children, ", ")+"]")
+	}
+
+	return "{" + strings.Join(fields, ", ") + "}"
 }
