@@ -46,8 +46,9 @@ const (
 )
 
 var _rawTextElements = map[string]bool{
-	"script": true,
-	"style":  true,
+	"script":   true,
+	"style":    true,
+	"textarea": true,
 }
 
 type tag struct {
@@ -320,7 +321,7 @@ func handleBeforeAttributeValue(ctx *parseContext) error {
 	case r == '"':
 		ctx.State = AttributeValueDoubleQuoted
 	case r == '\'':
-		ctx.State = AttributeValueDoubleQuoted
+		ctx.State = AttributeValueSingleQuoted
 	case r == '>':
 		err := applyAttr(ctx)
 		if err != nil {
