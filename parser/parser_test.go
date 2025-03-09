@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bytes"
+	"gost/parser/nodes"
 	"os"
 	"strings"
 	"testing"
@@ -100,7 +101,7 @@ func TestParserTokenization(t *testing.T) {
 			}
 
 			var buf bytes.Buffer
-			document.Render(map[string]any{}, &buf)
+			document.Render(nodes.NewRenderContext(map[string]any{}), &buf)
 			assert.Equal(t, expected, buf.String())
 		})
 	}
@@ -306,7 +307,7 @@ func TestParseExpressions(t *testing.T) {
 			assert.NotNil(t, document)
 
 			var buf bytes.Buffer
-			document.Render(tt.model, &buf)
+			document.Render(nodes.NewRenderContext(tt.model), &buf)
 			assert.Equal(t, tt.expected, buf.String())
 		})
 	}

@@ -14,7 +14,7 @@ type Node interface {
 	Children() []Node
 	Append(children ...Node)
 	String() string
-	Render(model map[string]any, w io.Writer) error
+	Render(c RenderContext, w io.Writer) error
 }
 
 type node struct {
@@ -84,7 +84,7 @@ func (t *node) String() string {
 	return "{" + strings.Join(fields, ", ") + "}"
 }
 
-func (t *node) Render(model map[string]any, w io.Writer) error {
+func (t *node) Render(c RenderContext, w io.Writer) error {
 	_, err := w.Write([]byte(t.OuterHTML()))
 	return err
 }
