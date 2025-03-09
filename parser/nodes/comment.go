@@ -8,7 +8,7 @@ type Comment interface {
 
 type comment struct {
 	node
-	textContent string
+	comment string
 }
 
 func NewComment(text string) TextNode {
@@ -16,7 +16,7 @@ func NewComment(text string) TextNode {
 		node: node{
 			name: "#comment",
 		},
-		textContent: text,
+		comment: text,
 	}
 }
 
@@ -25,7 +25,7 @@ func (t *comment) TextContent() string {
 }
 
 func (t *comment) OuterHTML() string {
-	return "<!--" + t.textContent + "-->"
+	return "<!--" + t.comment + "-->"
 }
 
 func (t *comment) Children() []Node {
@@ -37,6 +37,6 @@ func (t *comment) Append(children ...Node) {
 }
 
 func (t *comment) String() string {
-	text, _ := json.Marshal(t.textContent)
+	text, _ := json.Marshal(t.comment)
 	return "{\"name\": \"#comment\", \"comment\": " + string(text) + "}"
 }
