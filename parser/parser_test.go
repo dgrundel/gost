@@ -149,3 +149,77 @@ func TestParseErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestParseExpressions(t *testing.T) {
+	tests := []struct {
+		name string
+		html string
+	}{
+		{
+			name: "emit value with type",
+			html: `<p>Hello, {name: string}!</p>`,
+		}, {
+			name: "emit value without redeclaration",
+			html: `<p>Hello, {name: string}! It's good to see you again, {name}.</p>`,
+		}, {
+			name: "full attribute",
+			html: `<div>
+				<img src={imgSrc: string} alt={imgAlt: string}>
+			</div>`,
+		}, {
+			name: "partial attribute",
+			html: `<div>
+				<img src={imgSrc: string} alt="A photo of {name: string}">
+			</div>`,
+		}, {
+			name: "spread attributes",
+			html: `<div>
+				<img {...attrs: map[string, string]} alt="???">
+			</div>`,
+		}, {
+			name: "simple if",
+			html: `<div>
+				{if qty > 0}
+					You have {qty} item(s).
+				{/if}
+			</div>`,
+		}, {
+			name: "if...else",
+			html: `<div>
+				{if qty == 1}
+					You have {qty} item.
+				{else}
+					You have {qty} items.
+				{/if}
+			</div>`,
+		}, {
+			name: "if...else if",
+			html: `<div>
+				{if qty == 1}
+					You have {qty} item.
+				{else if qty > 1000}
+					You have way too many items.
+				{else}
+					You have {qty} items.
+				{/if}
+			</div>`,
+		}, {
+			name: "for loop",
+			html: `<ul>
+				{for i, item in items: string[]}
+					<li data-index={i}>{item.name}</li>
+				{/for}
+			</ul>`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := strings.NewReader(tt.html)
+
+			document, err := Parse(r)
+			assert.NoError(t, err)
+			assert.NotNil(t, document)
+		})
+	}
+}
