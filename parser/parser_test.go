@@ -226,6 +226,17 @@ func TestParseExpressions(t *testing.T) {
 				You have 1 item(s).
 			</div>`,
 		}, {
+			name: "simple if with type declaration",
+			html: `<div>
+				{if qty > 0: int}You have {qty} item(s).{/if}
+			</div>`,
+			model: map[string]any{
+				"qty": 1,
+			},
+			expected: `<div>
+				You have 1 item(s).
+			</div>`,
+		}, {
 			name: "if...else (1)",
 			html: `<div>
 				{if qty == 1}
@@ -276,6 +287,29 @@ func TestParseExpressions(t *testing.T) {
 			name: "for loop",
 			html: `<ul>
 				{for i, item in items: string[]}
+					<li data-index={i}>{item.name}</li>
+				{/for}
+			</ul>`,
+			model: map[string]any{
+				"items": []map[string]any{
+					{
+						"name": "Item 1",
+					},
+					{
+						"name": "Item 2",
+					},
+				},
+			},
+			expected: `<ul>
+
+					<li data-index="0">Item 1</li>
+					<li data-index="1">Item 2</li>
+				
+			</ul>`,
+		}, {
+			name: "for loop without type declaration",
+			html: `<ul>
+				{for i, item in items}
 					<li data-index={i}>{item.name}</li>
 				{/for}
 			</ul>`,
