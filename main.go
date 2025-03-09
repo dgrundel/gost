@@ -3,13 +3,15 @@ package main
 import (
 	"fmt"
 	"gost/parser"
+	"strings"
 )
 
 func main() {
-	parsed, err := parser.Parse("Hello, world!")
+	r := strings.NewReader("<h1>Hello, world!</h1>")
+	document, err := parser.Parse(r)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(parsed.Name(), parsed.TextContent())
+	fmt.Println(document.OuterHTML())
 }
