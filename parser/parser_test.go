@@ -98,7 +98,10 @@ func TestParserTokenization(t *testing.T) {
 			if expected == "" {
 				expected = tt.html
 			}
-			assert.Equal(t, expected, document.OuterHTML())
+
+			var buf bytes.Buffer
+			document.Render(map[string]any{}, &buf)
+			assert.Equal(t, expected, buf.String())
 		})
 	}
 }
@@ -152,45 +155,104 @@ func TestParseErrors(t *testing.T) {
 
 func TestParseExpressions(t *testing.T) {
 	tests := []struct {
-		name string
-		html string
+		name     string
+		html     string
+		expected string
+		model    map[string]any
 	}{
 		{
 			name: "emit value with type",
 			html: `<p>Hello, {name: string}!</p>`,
+			model: map[string]any{
+				"name": "John",
+			},
+			expected: `<p>Hello, John!</p>`,
 		}, {
-			name: "emit value without redeclaration",
-			html: `<p>Hello, {name: string}! It's good to see you again, {name}.</p>`,
+			name: "emit value again without redeclaration",
+			html: `<p>The name is {lastName: string}, {firstName: string} {lastName}.</p>`,
+			model: map[string]any{
+				"firstName": "James",
+				"lastName":  "Bond",
+			},
+			expected: `<p>The name is Bond, James Bond.</p>`,
 		}, {
 			name: "full attribute",
 			html: `<div>
 				<img src={imgSrc: string} alt={imgAlt: string}>
+			</div>`,
+			model: map[string]any{
+				"imgSrc": "https://example.com/image.jpg",
+				"imgAlt": "A photo of John",
+			},
+			expected: `<div>
+				<img src="https://example.com/image.jpg" alt="A photo of John">
 			</div>`,
 		}, {
 			name: "partial attribute",
 			html: `<div>
 				<img src={imgSrc: string} alt="A photo of {name: string}">
 			</div>`,
+			model: map[string]any{
+				"imgSrc": "https://example.com/image.jpg",
+				"name":   "John",
+			},
+			expected: `<div>
+				<img src="https://example.com/image.jpg" alt="A photo of John">
+			</div>`,
 		}, {
 			name: "spread attributes",
 			html: `<div>
-				<img {...attrs: map[string, string]} alt="???">
+				<img {...attrs: map[string, string]}>
+			</div>`,
+			model: map[string]any{
+				"attrs": map[string]any{
+					"src": "https://example.com/image.jpg",
+					"alt": "A photo of John",
+				},
+			},
+			expected: `<div>
+				<img src="https://example.com/image.jpg" alt="A photo of John">
 			</div>`,
 		}, {
 			name: "simple if",
 			html: `<div>
-				{if qty > 0}
-					You have {qty} item(s).
-				{/if}
+				{if qty > 0}You have {qty} item(s).{/if}
+			</div>`,
+			model: map[string]any{
+				"qty": 1,
+			},
+			expected: `<div>
+				You have 1 item(s).
 			</div>`,
 		}, {
-			name: "if...else",
+			name: "if...else (1)",
 			html: `<div>
 				{if qty == 1}
 					You have {qty} item.
 				{else}
 					You have {qty} items.
 				{/if}
+			</div>`,
+			model: map[string]any{
+				"qty": 1,
+			},
+			expected: `<div>
+				You have 1 item.
+			</div>`,
+		}, {
+			name: "if...else (2)",
+			html: `<div>
+				{if qty == 1}
+					You have {qty} item.
+				{else}
+					You have {qty} items.
+				{/if}
+			</div>`,
+			model: map[string]any{
+				"qty": 2,
+			},
+			expected: `<div>
+				You have 2 items.
 			</div>`,
 		}, {
 			name: "if...else if",
@@ -203,12 +265,34 @@ func TestParseExpressions(t *testing.T) {
 					You have {qty} items.
 				{/if}
 			</div>`,
+			model: map[string]any{
+				"qty": 1001,
+			},
+			expected: `<div>
+				You have way too many items.
+			</div>`,
 		}, {
 			name: "for loop",
 			html: `<ul>
 				{for i, item in items: string[]}
 					<li data-index={i}>{item.name}</li>
 				{/for}
+			</ul>`,
+			model: map[string]any{
+				"items": []map[string]any{
+					{
+						"name": "Item 1",
+					},
+					{
+						"name": "Item 2",
+					},
+				},
+			},
+			expected: `<ul>
+
+					<li data-index="0">Item 1</li>
+					<li data-index="1">Item 2</li>
+				
 			</ul>`,
 		},
 	}
@@ -220,6 +304,10 @@ func TestParseExpressions(t *testing.T) {
 			document, err := Parse(r)
 			assert.NoError(t, err)
 			assert.NotNil(t, document)
+
+			var buf bytes.Buffer
+			document.Render(tt.model, &buf)
+			assert.Equal(t, tt.expected, buf.String())
 		})
 	}
 }
