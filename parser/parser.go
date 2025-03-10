@@ -38,6 +38,7 @@ const (
 	ExpressionName             ParseState = "ExpressionName"
 	EndExpression              ParseState = "EndExpression"
 	IfConditionalExpression    ParseState = "IfConditionalExpression"
+	ElseConditionalExpression  ParseState = "ElseConditionalExpression"
 	ForLoopExpression          ParseState = "ForLoopExpression"
 	OutputExpressionKey        ParseState = "OutputExpressionKey"
 	OutputExpressionType       ParseState = "OutputExpressionType"
@@ -109,6 +110,7 @@ var _parseStateHandlers = map[ParseState](func(ctx *parseContext) error){
 	ExpressionName:             handleExpressionName,
 	EndExpression:              handleEndExpression,
 	IfConditionalExpression:    handleIfConditionalExpression,
+	ElseConditionalExpression:  handleElseConditionalExpression,
 	ForLoopExpression:          handleForLoopExpression,
 	OutputExpressionKey:        handleOutputExpressionKey,
 	OutputExpressionType:       handleOutputExpressionType,
@@ -623,23 +625,17 @@ func handleExpressionName(ctx *parseContext) error {
 		if str == "if" {
 			ctx.State = IfConditionalExpression
 			ctx.Buf.Reset()
+			break
 		}
 		if str == "else" {
-			ifexpr, ok := ctx.Parent.(nodes.ConditionalExpression)
-			if !ok {
-				return parseErr(ctx, "mismatched else expression")
-			}
-			expr := nodes.NewConditionalExpression()
-			expr.SetPrev(ifexpr)
-			ifexpr.SetNext(expr)
-			ctx.Parent = expr
+			ctx.State = ElseConditionalExpression
 			ctx.Buf.Reset()
-			ctx.State = Data
 			break
 		}
 		if str == "for" {
 			ctx.State = ForLoopExpression
 			ctx.Buf.Reset()
+			break
 		}
 		// do not reset buf, it contains the variable/output key name
 		ctx.State = OutputExpressionKey
@@ -728,6 +724,28 @@ func handleIfConditionalExpression(ctx *parseContext) error {
 	return nil
 }
 
+func handleElseConditionalExpression(ctx *parseContext) error {
+	r := ctx.Rune
+	switch {
+	case r == '}':
+		ifexpr, ok := ctx.Parent.(nodes.ConditionalExpression)
+		if !ok {
+			return parseErr(ctx, "mismatched else expression")
+		}
+		expr := nodes.NewConditionalExpression()
+		condition := nodes.NewStringCondition(ctx.Buf.String())
+		expr.SetCondition(condition)
+		expr.SetPrev(ifexpr)
+		ifexpr.SetNext(expr)
+		ctx.Parent = expr
+		ctx.Buf.Reset()
+		ctx.State = Data
+	default:
+		ctx.Buf.WriteRune(r)
+	}
+	return nil
+}
+
 func handleForLoopExpression(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
@@ -747,6 +765,7 @@ func handleForLoopExpression(ctx *parseContext) error {
 
 		ctx.Parent.Append(expr)
 		ctx.Parent = expr
+		ctx.Buf.Reset()
 		ctx.State = Data
 	default:
 		ctx.Buf.WriteRune(r)

@@ -35,6 +35,10 @@ func (e *loopExpression) OuterHTML() string {
 	buf.WriteString(e.valueKey)
 	buf.WriteString(" in ")
 	buf.WriteString(e.itemsKey)
+	if e.typ != "" {
+		buf.WriteString(":")
+		buf.WriteString(e.typ)
+	}
 	buf.WriteString("}")
 
 	for _, child := range e.children {
