@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gost/parser/nodes"
 	"io"
+	"regexp"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -34,6 +35,11 @@ const (
 	RawTextEndTagName          ParseState = "RawTextEndTagName"
 	MarkupDeclarationOpen      ParseState = "MarkupDeclarationOpen"
 	Comment                    ParseState = "Comment"
+	ExpressionStart            ParseState = "ExpressionStart"
+	EndExpression              ParseState = "EndExpression"
+	ConditionalExpression      ParseState = "ConditionalExpression"
+	LoopExpression             ParseState = "LoopExpression"
+
 	// CommentEndDash             ParseState = "CommentEndDash"
 	// CommentEnd                 ParseState = "CommentEnd"
 	// CommentStart               ParseState = "CommentStart"
@@ -44,6 +50,9 @@ const (
 	// DoctypeName                ParseState = "DoctypeName"
 	// AfterDoctypeName           ParseState = "AfterDoctypeName"
 )
+
+// i, item in items:type
+var _loopExpressionRegex = regexp.MustCompile(`^\s*(\w+),\s*(\w+)\s+in\s+(\w+)\s*(?:\:\s*([A-Za-z0-9_\]\[-]+))?\s*$`)
 
 var _rawTextElements = map[string]bool{
 	"script":   true,
@@ -73,6 +82,7 @@ type parseContext struct {
 	State    ParseState
 	Parent   nodes.Node
 	Tag      *tag
+	Document nodes.Document
 }
 
 var _parseStateHandlers = map[ParseState](func(ctx *parseContext) error){
@@ -95,6 +105,10 @@ var _parseStateHandlers = map[ParseState](func(ctx *parseContext) error){
 	RawTextEndTagName:          handleRawTextEndTagName,
 	MarkupDeclarationOpen:      handleMarkupDeclarationOpen,
 	Comment:                    handleComment,
+	ExpressionStart:            handleExpressionStart,
+	EndExpression:              handleEndExpression,
+	ConditionalExpression:      handleConditionalExpression,
+	LoopExpression:             handleLoopExpression,
 }
 
 func handleData(ctx *parseContext) error {
@@ -107,6 +121,13 @@ func handleData(ctx *parseContext) error {
 			ctx.Buf.Reset()
 		}
 		ctx.State = TagOpen
+	case '{':
+		if ctx.Buf.Len() > 0 {
+			text := nodes.NewTextNode(ctx.Buf.String())
+			ctx.Parent.Append(text)
+			ctx.Buf.Reset()
+		}
+		ctx.State = ExpressionStart
 	default:
 		ctx.Buf.WriteRune(r)
 	}
@@ -587,6 +608,134 @@ func handleComment(ctx *parseContext) error {
 	return nil
 }
 
+func handleExpressionStart(ctx *parseContext) error {
+	r := ctx.Rune
+	switch {
+	case unicode.IsSpace(r):
+		break
+	case r == '/':
+		ctx.State = EndExpression
+	default:
+		ctx.Buf.WriteRune(r)
+		str := ctx.Buf.String()
+
+		if str == "if" || str == "else" {
+			expr := nodes.NewConditionalExpression()
+			ctx.Parent.Append(expr)
+			ctx.Parent = expr
+			ctx.Buf.Reset()
+			ctx.State = ConditionalExpression
+			break
+		}
+
+		if str == "for" {
+			expr := nodes.NewLoopExpression()
+			ctx.Parent.Append(expr)
+			ctx.Parent = expr
+			ctx.Buf.Reset()
+			ctx.State = LoopExpression
+			break
+		}
+
+		if len(str) >= 4 { // 4 is max length for a keyword
+			return parseErr(ctx, "invalid expression keyword: "+str)
+		}
+	}
+	return nil
+}
+
+func handleEndExpression(ctx *parseContext) error {
+	r := ctx.Rune
+	switch {
+	case unicode.IsSpace(r):
+		break
+	default:
+		ctx.Buf.WriteRune(r)
+		str := ctx.Buf.String()
+
+		if str == "if" {
+			if _, ok := ctx.Parent.(nodes.ConditionalExpression); !ok {
+				return parseErr(ctx, "invalid expression keyword: "+str)
+			}
+
+			ctx.Parent = ctx.Parent.Parent()
+			ctx.State = Data
+			break
+		}
+
+		if str == "for" {
+			if _, ok := ctx.Parent.(nodes.LoopExpression); !ok {
+				return parseErr(ctx, "invalid expression keyword: "+str)
+			}
+
+			ctx.Parent = ctx.Parent.Parent()
+			ctx.State = Data
+			break
+		}
+
+		if len(str) >= 3 { // 3 is max length for end keyword (if, for)
+			return parseErr(ctx, "invalid expression keyword: "+str)
+		}
+	}
+	return nil
+}
+
+func handleConditionalExpression(ctx *parseContext) error {
+	r := ctx.Rune
+	switch r {
+	case '}':
+		if ctx.Buf.Len() > 0 {
+			condition := nodes.NewStringCondition(ctx.Buf.String())
+			if expr, ok := ctx.Parent.(nodes.ConditionalExpression); ok {
+				expr.SetCondition(condition)
+			} else {
+				return parseErr(ctx, "tried to set condition on non-conditional expression")
+			}
+			ctx.Buf.Reset()
+		} else {
+			return parseErr(ctx, "empty conditional expression")
+		}
+		ctx.State = Data
+	default:
+		ctx.Buf.WriteRune(r)
+	}
+	return nil
+}
+
+func handleLoopExpression(ctx *parseContext) error {
+	r := ctx.Rune
+	switch r {
+	case '}':
+		if ctx.Buf.Len() > 0 {
+			expr, ok := ctx.Parent.(nodes.LoopExpression)
+			if !ok {
+				return parseErr(ctx, "tried to set fields on non-loop expression")
+			}
+
+			str := ctx.Buf.String()
+			matches := _loopExpressionRegex.FindStringSubmatch(str)
+			if len(matches) != 5 {
+				return parseErr(ctx, "invalid loop expression: "+str)
+			}
+
+			// index, value in items:type
+			expr.SetIndexKey(matches[1])
+			expr.SetValueKey(matches[2])
+			expr.SetItemsKey(matches[3])
+
+			// TODO: parse type and add to document
+
+			ctx.Buf.Reset()
+		} else {
+			return parseErr(ctx, "empty loop expression")
+		}
+		ctx.State = Data
+	default:
+		ctx.Buf.WriteRune(r)
+	}
+	return nil
+}
+
 func debugInfo(ctx *parseContext) string {
 	info := map[string]string{
 		"rune":     string(ctx.Rune),
@@ -669,13 +818,13 @@ func applyAttr(ctx *parseContext) error {
 }
 
 func Parse(reader io.RuneReader) (nodes.Document, error) {
-
 	document := nodes.NewDocument()
 
 	ctx := &parseContext{
-		State:  Data,
-		Parent: document,
-		Tag:    nil,
+		State:    Data,
+		Parent:   document,
+		Tag:      nil,
+		Document: document,
 	}
 
 	err := func() (e error) {

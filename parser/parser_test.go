@@ -340,9 +340,11 @@ func TestParseExpressions(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, document)
 
-			var buf bytes.Buffer
-			document.Render(nodes.NewRenderContext(tt.model), &buf)
-			assert.Equal(t, tt.expected, buf.String())
+			if document != nil {
+				var buf bytes.Buffer
+				document.Render(nodes.NewRenderContext(tt.model), &buf)
+				assert.Equal(t, tt.expected, buf.String())
+			}
 		})
 	}
 }

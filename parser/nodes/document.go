@@ -3,6 +3,7 @@ package nodes
 type Document interface {
 	Node
 	GetDeclaredTypes() map[string]ExpressionType
+	AddDeclaredType(name string, expressionType ExpressionType)
 }
 
 type document struct {
@@ -19,6 +20,10 @@ func NewDocument() Document {
 
 func (t *document) GetDeclaredTypes() map[string]ExpressionType {
 	return t.declaredTypes
+}
+
+func (t *document) AddDeclaredType(name string, expressionType ExpressionType) {
+	t.declaredTypes[name] = expressionType
 }
 
 func (t *document) Parent() Node {

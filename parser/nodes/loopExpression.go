@@ -8,6 +8,9 @@ import (
 
 type LoopExpression interface {
 	Node
+	SetIndexKey(string)
+	SetValueKey(string)
+	SetItemsKey(string)
 }
 
 type loopExpression struct {
@@ -17,12 +20,20 @@ type loopExpression struct {
 	itemsKey string
 }
 
-func NewLoopExpression(key, value, items string) LoopExpression {
-	return &loopExpression{
-		indexKey: key,
-		valueKey: value,
-		itemsKey: items,
-	}
+func NewLoopExpression() LoopExpression {
+	return &loopExpression{}
+}
+
+func (e *loopExpression) SetIndexKey(key string) {
+	e.indexKey = key
+}
+
+func (e *loopExpression) SetValueKey(key string) {
+	e.valueKey = key
+}
+
+func (e *loopExpression) SetItemsKey(key string) {
+	e.itemsKey = key
 }
 
 func (e *loopExpression) OuterHTML() string {

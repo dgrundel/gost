@@ -7,6 +7,7 @@ import (
 
 type ConditionalExpression interface {
 	Node
+	SetCondition(Condition)
 	SetPrev(ConditionalExpression)
 	SetNext(ConditionalExpression)
 }
@@ -18,10 +19,12 @@ type conditionalExpression struct {
 	next      ConditionalExpression
 }
 
-func NewConditionalExpression(condition Condition) ConditionalExpression {
-	return &conditionalExpression{
-		condition: condition,
-	}
+func NewConditionalExpression() ConditionalExpression {
+	return &conditionalExpression{}
+}
+
+func (e *conditionalExpression) SetCondition(condition Condition) {
+	e.condition = condition
 }
 
 func (e *conditionalExpression) SetPrev(prev ConditionalExpression) {
