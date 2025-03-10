@@ -35,10 +35,12 @@ const (
 	RawTextEndTagName          ParseState = "RawTextEndTagName"
 	MarkupDeclarationOpen      ParseState = "MarkupDeclarationOpen"
 	Comment                    ParseState = "Comment"
-	ExpressionStart            ParseState = "ExpressionStart"
+	ExpressionName             ParseState = "ExpressionName"
 	EndExpression              ParseState = "EndExpression"
-	ConditionalExpression      ParseState = "ConditionalExpression"
-	LoopExpression             ParseState = "LoopExpression"
+	IfConditionalExpression    ParseState = "IfConditionalExpression"
+	ForLoopExpression          ParseState = "ForLoopExpression"
+	OutputExpressionKey        ParseState = "OutputExpressionKey"
+	OutputExpressionType       ParseState = "OutputExpressionType"
 
 	// CommentEndDash             ParseState = "CommentEndDash"
 	// CommentEnd                 ParseState = "CommentEnd"
@@ -51,8 +53,7 @@ const (
 	// AfterDoctypeName           ParseState = "AfterDoctypeName"
 )
 
-// i, item in items:type
-var _loopExpressionRegex = regexp.MustCompile(`^\s*(\w+),\s*(\w+)\s+in\s+(\w+)\s*(?:\:\s*([A-Za-z0-9_\]\[-]+))?\s*$`)
+var _forLoopRegex = regexp.MustCompile(`^\s*(\w+),\s*(\w+)\s+in\s+(\w+)\s*(?:\:\s*([A-Za-z0-9_\]\[-]+))?\s*$`)
 
 var _rawTextElements = map[string]bool{
 	"script":   true,
@@ -105,10 +106,12 @@ var _parseStateHandlers = map[ParseState](func(ctx *parseContext) error){
 	RawTextEndTagName:          handleRawTextEndTagName,
 	MarkupDeclarationOpen:      handleMarkupDeclarationOpen,
 	Comment:                    handleComment,
-	ExpressionStart:            handleExpressionStart,
+	ExpressionName:             handleExpressionName,
 	EndExpression:              handleEndExpression,
-	ConditionalExpression:      handleConditionalExpression,
-	LoopExpression:             handleLoopExpression,
+	IfConditionalExpression:    handleIfConditionalExpression,
+	ForLoopExpression:          handleForLoopExpression,
+	OutputExpressionKey:        handleOutputExpressionKey,
+	OutputExpressionType:       handleOutputExpressionType,
 }
 
 func handleData(ctx *parseContext) error {
@@ -127,7 +130,8 @@ func handleData(ctx *parseContext) error {
 			ctx.Parent.Append(text)
 			ctx.Buf.Reset()
 		}
-		ctx.State = ExpressionStart
+		ctx.Temp.Reset() // reset temp buffer for expression
+		ctx.State = ExpressionName
 	default:
 		ctx.Buf.WriteRune(r)
 	}
@@ -608,38 +612,68 @@ func handleComment(ctx *parseContext) error {
 	return nil
 }
 
-func handleExpressionStart(ctx *parseContext) error {
+func handleExpressionName(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
 	case unicode.IsSpace(r):
-		break
+		if ctx.Buf.Len() == 0 {
+			break
+		}
+		str := ctx.Buf.String()
+		if str == "if" {
+			ctx.State = IfConditionalExpression
+			ctx.Buf.Reset()
+		}
+		if str == "else" {
+			ifexpr, ok := ctx.Parent.(nodes.ConditionalExpression)
+			if !ok {
+				return parseErr(ctx, "mismatched else expression")
+			}
+			expr := nodes.NewConditionalExpression()
+			expr.SetPrev(ifexpr)
+			ifexpr.SetNext(expr)
+			ctx.Parent = expr
+			ctx.Buf.Reset()
+			ctx.State = Data
+			break
+		}
+		if str == "for" {
+			ctx.State = ForLoopExpression
+			ctx.Buf.Reset()
+		}
+		// do not reset buf, it contains the variable/output key name
+		ctx.State = OutputExpressionKey
+	case r == ':':
+		// put buffer content into temp buffer
+		// temp will contain the variable/output key name
+		ctx.Temp.Write(ctx.Buf.Bytes())
+		ctx.Buf.Reset()
+		ctx.State = OutputExpressionType
 	case r == '/':
 		ctx.State = EndExpression
+	case r == '}':
+		str := ctx.Buf.String()
+		// if and for expressions must have content
+		if str == "if" || str == "for" {
+			return parseErr(ctx, "invalid empty if/for expression: "+str)
+		}
+		if str == "else" {
+			ifexpr, ok := ctx.Parent.(nodes.ConditionalExpression)
+			if !ok {
+				return parseErr(ctx, "mismatched else expression")
+			}
+			expr := nodes.NewConditionalExpression()
+			expr.SetPrev(ifexpr)
+			ifexpr.SetNext(expr)
+			ctx.Parent = expr
+		} else {
+			expr := nodes.NewOutputExpression(str, "")
+			ctx.Parent.Append(expr)
+		}
+		ctx.Buf.Reset()
+		ctx.State = Data
 	default:
 		ctx.Buf.WriteRune(r)
-		str := ctx.Buf.String()
-
-		if str == "if" || str == "else" {
-			expr := nodes.NewConditionalExpression()
-			ctx.Parent.Append(expr)
-			ctx.Parent = expr
-			ctx.Buf.Reset()
-			ctx.State = ConditionalExpression
-			break
-		}
-
-		if str == "for" {
-			expr := nodes.NewLoopExpression()
-			ctx.Parent.Append(expr)
-			ctx.Parent = expr
-			ctx.Buf.Reset()
-			ctx.State = LoopExpression
-			break
-		}
-
-		if len(str) >= 4 { // 4 is max length for a keyword
-			return parseErr(ctx, "invalid expression keyword: "+str)
-		}
 	}
 	return nil
 }
@@ -649,52 +683,44 @@ func handleEndExpression(ctx *parseContext) error {
 	switch {
 	case unicode.IsSpace(r):
 		break
+	case r == '}':
+		str := ctx.Buf.String()
+		ctx.Buf.Reset()
+		// can only close if/for expressions
+		if str == "if" {
+			_, ok := ctx.Parent.(nodes.ConditionalExpression)
+			if !ok {
+				return parseErr(ctx, "mismatched end expression: "+str)
+			}
+			ctx.Parent = ctx.Parent.Parent()
+			ctx.State = Data
+			break
+		}
+		if str == "for" {
+			_, ok := ctx.Parent.(nodes.LoopExpression)
+			if !ok {
+				return parseErr(ctx, "mismatched end expression: "+str)
+			}
+			ctx.Parent = ctx.Parent.Parent()
+			ctx.State = Data
+			break
+		}
+		return parseErr(ctx, "invalid end expression: "+str)
 	default:
 		ctx.Buf.WriteRune(r)
-		str := ctx.Buf.String()
-
-		if str == "if" {
-			if _, ok := ctx.Parent.(nodes.ConditionalExpression); !ok {
-				return parseErr(ctx, "invalid expression keyword: "+str)
-			}
-
-			ctx.Parent = ctx.Parent.Parent()
-			ctx.State = Data
-			break
-		}
-
-		if str == "for" {
-			if _, ok := ctx.Parent.(nodes.LoopExpression); !ok {
-				return parseErr(ctx, "invalid expression keyword: "+str)
-			}
-
-			ctx.Parent = ctx.Parent.Parent()
-			ctx.State = Data
-			break
-		}
-
-		if len(str) >= 3 { // 3 is max length for end keyword (if, for)
-			return parseErr(ctx, "invalid expression keyword: "+str)
-		}
 	}
 	return nil
 }
 
-func handleConditionalExpression(ctx *parseContext) error {
+func handleIfConditionalExpression(ctx *parseContext) error {
 	r := ctx.Rune
-	switch r {
-	case '}':
-		if ctx.Buf.Len() > 0 {
-			condition := nodes.NewStringCondition(ctx.Buf.String())
-			if expr, ok := ctx.Parent.(nodes.ConditionalExpression); ok {
-				expr.SetCondition(condition)
-			} else {
-				return parseErr(ctx, "tried to set condition on non-conditional expression")
-			}
-			ctx.Buf.Reset()
-		} else {
-			return parseErr(ctx, "empty conditional expression")
-		}
+	switch {
+	case r == '}':
+		condition := nodes.NewStringCondition(ctx.Buf.String())
+		expr := nodes.NewConditionalExpression()
+		expr.SetCondition(condition)
+		ctx.Parent.Append(expr)
+		ctx.Parent = expr
 		ctx.State = Data
 	default:
 		ctx.Buf.WriteRune(r)
@@ -702,33 +728,71 @@ func handleConditionalExpression(ctx *parseContext) error {
 	return nil
 }
 
-func handleLoopExpression(ctx *parseContext) error {
+func handleForLoopExpression(ctx *parseContext) error {
 	r := ctx.Rune
-	switch r {
-	case '}':
-		if ctx.Buf.Len() > 0 {
-			expr, ok := ctx.Parent.(nodes.LoopExpression)
-			if !ok {
-				return parseErr(ctx, "tried to set fields on non-loop expression")
-			}
-
-			str := ctx.Buf.String()
-			matches := _loopExpressionRegex.FindStringSubmatch(str)
-			if len(matches) != 5 {
-				return parseErr(ctx, "invalid loop expression: "+str)
-			}
-
-			// index, value in items:type
-			expr.SetIndexKey(matches[1])
-			expr.SetValueKey(matches[2])
-			expr.SetItemsKey(matches[3])
-
-			// TODO: parse type and add to document
-
-			ctx.Buf.Reset()
-		} else {
-			return parseErr(ctx, "empty loop expression")
+	switch {
+	case r == '}':
+		content := ctx.Buf.String()
+		matches := _forLoopRegex.FindStringSubmatch(content)
+		if len(matches) != 5 {
+			return parseErr(ctx, "invalid for loop expression: "+content)
 		}
+
+		// i, item in items
+		indexKey := matches[1]
+		itemKey := matches[2]
+		collectionKey := matches[3]
+		typ := matches[4]
+		expr := nodes.NewLoopExpression(indexKey, itemKey, collectionKey, typ)
+
+		ctx.Parent.Append(expr)
+		ctx.Parent = expr
+		ctx.State = Data
+	default:
+		ctx.Buf.WriteRune(r)
+	}
+	return nil
+}
+
+func handleOutputExpressionKey(ctx *parseContext) error {
+	r := ctx.Rune
+	switch {
+	case unicode.IsSpace(r):
+		break
+	case r == ':':
+		// put buffer content into temp buffer
+		// temp will contain the variable/output key name
+		ctx.Temp.Write(ctx.Buf.Bytes())
+		ctx.Buf.Reset()
+		ctx.State = OutputExpressionType
+	case r == '}':
+		key := ctx.Temp.String()
+		expr := nodes.NewOutputExpression(key, "")
+		ctx.Parent.Append(expr)
+		ctx.Buf.Reset()
+		ctx.State = Data
+	default:
+		ctx.Buf.WriteRune(r)
+	}
+	return nil
+}
+
+func handleOutputExpressionType(ctx *parseContext) error {
+	r := ctx.Rune
+	switch {
+	case unicode.IsSpace(r):
+		break
+	case r == '}':
+		if ctx.Buf.Len() == 0 {
+			return parseErr(ctx, "invalid output expression type: empty")
+		}
+
+		key := ctx.Temp.String()
+		typ := ctx.Buf.String()
+		expr := nodes.NewOutputExpression(key, typ)
+		ctx.Parent.Append(expr)
+		ctx.Temp.Reset()
+		ctx.Buf.Reset()
 		ctx.State = Data
 	default:
 		ctx.Buf.WriteRune(r)
