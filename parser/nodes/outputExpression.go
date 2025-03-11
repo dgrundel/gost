@@ -1,6 +1,8 @@
 package nodes
 
-import "bytes"
+import (
+	"bytes"
+)
 
 type OutputExpression interface {
 	Node
@@ -47,5 +49,5 @@ func (o *outputExpression) Append(children ...Node) {
 }
 
 func (o *outputExpression) String() string {
-	return "{\"name\": \"#output-expression\", \"key\": " + string(o.key) + "}"
+	return "{\"name\": \"#output-expression\", \"key\": \"" + string(o.key) + "\"}"
 }

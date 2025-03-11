@@ -2,19 +2,18 @@ package nodes
 
 import (
 	"bytes"
-	"io"
 )
 
 type ConditionalExpression interface {
 	Node
-	SetCondition(Condition)
+	SetCondition(string)
 	SetPrev(ConditionalExpression)
 	SetNext(ConditionalExpression)
 }
 
 type conditionalExpression struct {
 	node
-	condition Condition
+	condition string
 	prev      ConditionalExpression
 	next      ConditionalExpression
 }
@@ -23,7 +22,7 @@ func NewConditionalExpression() ConditionalExpression {
 	return &conditionalExpression{}
 }
 
-func (e *conditionalExpression) SetCondition(condition Condition) {
+func (e *conditionalExpression) SetCondition(condition string) {
 	e.condition = condition
 }
 
@@ -38,15 +37,15 @@ func (e *conditionalExpression) SetNext(next ConditionalExpression) {
 func (e *conditionalExpression) OuterHTML() string {
 	var buf bytes.Buffer
 
-	if e.prev == nil && e.condition != nil {
+	if e.prev == nil && e.condition != "" {
 		buf.WriteString("{if ")
-		buf.WriteString(e.condition.OuterHTML())
+		buf.WriteString(e.condition)
 		buf.WriteString("} ")
-	} else if e.prev != nil && e.condition != nil {
+	} else if e.prev != nil && e.condition != "" {
 		buf.WriteString("{else if ")
-		buf.WriteString(e.condition.OuterHTML())
+		buf.WriteString(e.condition)
 		buf.WriteString("} ")
-	} else if e.prev != nil && e.condition == nil {
+	} else if e.prev != nil && e.condition == "" {
 		buf.WriteString("{else} ")
 	} else {
 		buf.WriteString("{if true} ")
@@ -58,40 +57,4 @@ func (e *conditionalExpression) OuterHTML() string {
 
 	buf.WriteString("{/if}")
 	return buf.String()
-}
-
-func (e *conditionalExpression) Render(c RenderContext, w io.Writer) error {
-	// nil condition expected in else branch
-	if e.condition == nil || e.condition.Evaluate(c) {
-		for _, child := range e.children {
-			err := child.Render(c, w)
-			if err != nil {
-				return err
-			}
-		}
-	} else if e.next != nil { // else branch
-		return e.next.Render(c, w)
-	}
-	return nil
-}
-
-type Condition interface {
-	Evaluate(RenderContext) bool
-	OuterHTML() string
-}
-
-type stringCondition struct {
-	expression string
-}
-
-func NewStringCondition(expression string) Condition {
-	return &stringCondition{expression: expression}
-}
-
-func (s *stringCondition) Evaluate(c RenderContext) bool {
-	return true
-}
-
-func (s *stringCondition) OuterHTML() string {
-	return s.expression
 }

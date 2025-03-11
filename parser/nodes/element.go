@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 )
@@ -51,37 +52,38 @@ func (t *element) IsVoid() bool {
 }
 
 func (t *element) OuterHTML() string {
-	var builder strings.Builder
-	builder.WriteByte('<')
-	builder.WriteString(t.name)
+	var buf bytes.Buffer
+	buf.WriteByte('<')
+	buf.WriteString(t.name)
 
 	t.attributes.Iterator()(func(key, value string) bool {
-		builder.WriteByte(' ')
-		builder.WriteString(key)
+		buf.WriteByte(' ')
+		buf.WriteString(key)
 
 		if value != "" {
-			builder.WriteString("=\"")
-			builder.WriteString(value)
-			builder.WriteByte('"')
+			buf.WriteString("=\"")
+			buf.WriteString(value)
+			buf.WriteByte('"')
 		}
 
 		return true
 	})
 
-	builder.WriteByte('>')
+	buf.WriteByte('>')
 
 	if t.void {
-		return builder.String()
+		return buf.String()
 	}
 
 	for _, child := range t.children {
-		builder.WriteString(child.OuterHTML())
+		buf.WriteString(child.OuterHTML())
 	}
 
-	builder.WriteString("</")
-	builder.WriteString(t.name)
-	builder.WriteByte('>')
-	return builder.String()
+	buf.WriteString("</")
+	buf.WriteString(t.name)
+	buf.WriteByte('>')
+
+	return buf.String()
 }
 
 func (t *element) GetAttribute(name string) string {

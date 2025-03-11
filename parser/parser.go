@@ -646,6 +646,9 @@ func handleExpressionName(ctx *parseContext) error {
 		ctx.Buf.Reset()
 		ctx.State = OutputExpressionType
 	case r == '/':
+		if ctx.Buf.Len() > 0 {
+			return parseErr(ctx, "invalid expression name: "+ctx.Buf.String()+"/")
+		}
 		ctx.State = EndExpression
 	case r == '}':
 		str := ctx.Buf.String()
@@ -712,7 +715,7 @@ func handleIfConditionalExpression(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
 	case r == '}':
-		condition := nodes.NewStringCondition(ctx.Buf.String())
+		condition := ctx.Buf.String()
 		expr := nodes.NewConditionalExpression()
 		expr.SetCondition(condition)
 		ctx.Parent.Append(expr)
@@ -733,7 +736,7 @@ func handleElseConditionalExpression(ctx *parseContext) error {
 			return parseErr(ctx, "mismatched else expression")
 		}
 		expr := nodes.NewConditionalExpression()
-		condition := nodes.NewStringCondition(ctx.Buf.String())
+		condition := ctx.Buf.String()
 		expr.SetCondition(condition)
 		expr.SetPrev(ifexpr)
 		ifexpr.SetNext(expr)

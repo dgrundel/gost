@@ -1,7 +1,7 @@
 package nodes
 
 import (
-	"io"
+	"bytes"
 	"strings"
 )
 
@@ -14,7 +14,6 @@ type Node interface {
 	Children() []Node
 	Append(children ...Node)
 	String() string
-	Render(c RenderContext, w io.Writer) error
 }
 
 type node struct {
@@ -40,11 +39,11 @@ func (t *node) TextContent() string {
 }
 
 func (t *node) OuterHTML() string {
-	var builder strings.Builder
+	var buf bytes.Buffer
 	for _, child := range t.children {
-		builder.WriteString(child.OuterHTML())
+		buf.WriteString(child.OuterHTML())
 	}
-	return builder.String()
+	return buf.String()
 }
 
 func (t *node) Parent() Node {
@@ -82,9 +81,4 @@ func (t *node) String() string {
 	}
 
 	return "{" + strings.Join(fields, ", ") + "}"
-}
-
-func (t *node) Render(c RenderContext, w io.Writer) error {
-	_, err := w.Write([]byte(t.OuterHTML()))
-	return err
 }

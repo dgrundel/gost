@@ -2,8 +2,6 @@ package nodes
 
 import (
 	"bytes"
-	"errors"
-	"io"
 )
 
 type LoopExpression interface {
@@ -49,32 +47,20 @@ func (e *loopExpression) OuterHTML() string {
 	return buf.String()
 }
 
-func (e *loopExpression) Render(c RenderContext, w io.Writer) error {
-	items, ok := c.Get(e.itemsKey)
-	if !ok {
-		return errors.New("items not found")
+func (e *loopExpression) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("{\"name\": \"#loop-expression\", \"indexKey\": \"")
+	buf.WriteString(e.indexKey)
+	buf.WriteString("\", \"valueKey\": \"")
+	buf.WriteString(e.valueKey)
+	buf.WriteString("\", \"itemsKey\": \"")
+	buf.WriteString(e.itemsKey)
+	buf.WriteString("\", \"typ\": \"")
+	buf.WriteString(e.typ)
+	buf.WriteString("\", \"children\": [")
+	for _, child := range e.children {
+		buf.WriteString(child.String())
 	}
-
-	slice, ok := items.([]any)
-	if !ok {
-		return errors.New("items is not a slice")
-	}
-
-	for i, item := range slice {
-		// Create a new context with loop variables
-		loopContext := c.WithData(map[string]any{
-			e.indexKey: i,
-			e.valueKey: item,
-		})
-
-		// Render each child with the loop context
-		for _, child := range e.children {
-			err := child.Render(loopContext, w)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	buf.WriteString("]}")
+	return buf.String()
 }

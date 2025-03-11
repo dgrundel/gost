@@ -1,6 +1,8 @@
 package nodes
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type TextNode interface {
 	Node
