@@ -700,7 +700,6 @@ func handleExpressionName(ctx *parseContext) error {
 				return parseErr(ctx, "mismatched else expression")
 			}
 			expr := nodes.NewConditionalExpression()
-			expr.SetPrev(ifexpr)
 			ifexpr.SetNext(expr)
 			ctx.Parent = expr
 		} else {
@@ -775,10 +774,9 @@ func handleElseConditionalExpression(ctx *parseContext) error {
 			return parseErr(ctx, "mismatched else expression")
 		}
 		expr := nodes.NewConditionalExpression()
+		ifexpr.SetNext(expr)
 		condition := ctx.Buf.String()
 		expr.SetCondition(condition)
-		expr.SetPrev(ifexpr)
-		ifexpr.SetNext(expr)
 		ctx.Parent = expr
 		ctx.Buf.Reset()
 		ctx.State = Data
