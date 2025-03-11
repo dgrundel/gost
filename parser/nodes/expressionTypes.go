@@ -34,6 +34,7 @@ type ExpressionType interface {
 	BaseType() ExpressionBaseType
 	KeyType() ExpressionBaseType
 	ValueType() ExpressionBaseType
+	String() string
 }
 
 type expressionType struct {

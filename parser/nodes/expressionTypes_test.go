@@ -101,3 +101,61 @@ func TestParseExpressionType(t *testing.T) {
 		})
 	}
 }
+
+func TestExpressionType_String(t *testing.T) {
+	tests := []struct {
+		name string
+		expr ExpressionType
+		want string
+	}{
+		{
+			name: "string type",
+			expr: NewExpressionType(ExpressionBaseTypeString, "", ExpressionBaseTypeString),
+			want: "string",
+		},
+		{
+			name: "int type",
+			expr: NewExpressionType(ExpressionBaseTypeInt, "", ExpressionBaseTypeInt),
+			want: "int",
+		},
+		{
+			name: "bool type",
+			expr: NewExpressionType(ExpressionBaseTypeBool, "", ExpressionBaseTypeBool),
+			want: "bool",
+		},
+		{
+			name: "float type",
+			expr: NewExpressionType(ExpressionBaseTypeFloat, "", ExpressionBaseTypeFloat),
+			want: "float",
+		},
+		{
+			name: "string array",
+			expr: NewExpressionType(ExpressionBaseTypeArray, ExpressionBaseTypeInt, ExpressionBaseTypeString),
+			want: "string[]",
+		},
+		{
+			name: "int array",
+			expr: NewExpressionType(ExpressionBaseTypeArray, ExpressionBaseTypeInt, ExpressionBaseTypeInt),
+			want: "int[]",
+		},
+		{
+			name: "map[string, int]",
+			expr: NewExpressionType(ExpressionBaseTypeMap, ExpressionBaseTypeString, ExpressionBaseTypeInt),
+			want: "map[string, int]",
+		},
+		{
+			name: "map[int, bool]",
+			expr: NewExpressionType(ExpressionBaseTypeMap, ExpressionBaseTypeInt, ExpressionBaseTypeBool),
+			want: "map[int, bool]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.expr.String()
+			if got != tt.want {
+				t.Errorf("ExpressionType.String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
