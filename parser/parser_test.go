@@ -153,15 +153,18 @@ func TestParseErrors(t *testing.T) {
 
 func TestParseExpressions(t *testing.T) {
 	tests := []struct {
-		name string
-		html string
+		name     string
+		html     string
+		expected string
 	}{
 		{
-			name: "emit value with type",
-			html: `<p>Hello, {name: string}!</p>`,
+			name:     "emit value with type",
+			html:     `<p>Hello, {name: string}!</p>`,
+			expected: `<p>Hello, {name:string}!</p>`,
 		}, {
-			name: "emit value again without redeclaration",
-			html: `<p>The name is {lastName: string}, {firstName: string} {lastName}.</p>`,
+			name:     "emit value again without redeclaration",
+			html:     `<p>The name is {lastName: string}, {firstName: string} {lastName}.</p>`,
+			expected: `<p>The name is {lastName:string}, {firstName:string} {lastName}.</p>`,
 		}, {
 			name: "full attribute",
 			html: `<div>
@@ -223,6 +226,11 @@ func TestParseExpressions(t *testing.T) {
 					<li data-index={i}>{item}</li>
 				{/for}
 			</ul>`,
+			expected: `<ul>
+				{for i, item in items:string[]}
+					<li data-index={i}>{item}</li>
+				{/for}
+			</ul>`,
 		}, {
 			name: "for loop without type declaration",
 			html: `<ul>
@@ -242,7 +250,12 @@ func TestParseExpressions(t *testing.T) {
 			assert.NotNil(t, document)
 
 			if document != nil {
-				assert.Equal(t, tt.html, document.OuterHTML())
+				expected := tt.html
+				if tt.expected != "" {
+					expected = tt.expected
+				}
+
+				assert.Equal(t, expected, document.OuterHTML())
 			}
 		})
 	}
