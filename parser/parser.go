@@ -668,6 +668,7 @@ func handleExpressionName(ctx *parseContext) error {
 		if str == "else" {
 			ctx.State = ElseConditionalExpression
 			ctx.Buf.Reset()
+			ctx.Temp.Reset()
 			break
 		}
 		if str == "for" {
@@ -768,7 +769,14 @@ func handleIfConditionalExpression(ctx *parseContext) error {
 func handleElseConditionalExpression(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
+	case unicode.IsSpace(r):
+		if ctx.Buf.Len() > 0 {
+			ctx.Buf.WriteRune(r)
+		}
 	case r == '}':
+		if ctx.Temp.String() != "if" {
+			return parseErr(ctx, "invalid else expression: "+ctx.Temp.String())
+		}
 		ifexpr, ok := ctx.Parent.(nodes.ConditionalExpression)
 		if !ok {
 			return parseErr(ctx, "mismatched else expression")
@@ -781,7 +789,11 @@ func handleElseConditionalExpression(ctx *parseContext) error {
 		ctx.Buf.Reset()
 		ctx.State = Data
 	default:
-		ctx.Buf.WriteRune(r)
+		if ctx.Temp.Len() < 2 {
+			ctx.Temp.WriteRune(r)
+		} else {
+			ctx.Buf.WriteRune(r)
+		}
 	}
 	return nil
 }
