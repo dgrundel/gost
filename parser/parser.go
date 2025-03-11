@@ -872,7 +872,7 @@ func applyTag(ctx *parseContext, void bool) (nodes.Element, error) {
 	} else {
 		elem = nodes.NewElement(name, void)
 
-		ctx.Tag.attributes.Iterator()(func(key, value string) bool {
+		ctx.Tag.attributes.Iterator()(func(key string, value nodes.AttributeValue) bool {
 			elem.SetAttribute(key, value)
 			return true
 		})
@@ -898,7 +898,7 @@ func applyAttr(ctx *parseContext) error {
 	if name == "" {
 		return parseErr(ctx, "empty attr name")
 	}
-	t.attributes.SetAttribute(name, value)
+	t.attributes.SetAttribute(name, nodes.AttributeValueString(value))
 	t.attrName.Reset()
 	t.attrValue.Reset()
 	return nil

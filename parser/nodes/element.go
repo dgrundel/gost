@@ -27,8 +27,8 @@ var _voidElements = map[string]bool{
 type Element interface {
 	Node
 	IsVoid() bool
-	GetAttribute(string) string
-	SetAttribute(string, string)
+	GetAttribute(string) AttributeValue
+	SetAttribute(string, AttributeValue)
 }
 
 type element struct {
@@ -56,13 +56,13 @@ func (t *element) OuterHTML() string {
 	buf.WriteByte('<')
 	buf.WriteString(t.name)
 
-	t.attributes.Iterator()(func(key, value string) bool {
+	t.attributes.Iterator()(func(key string, value AttributeValue) bool {
 		buf.WriteByte(' ')
 		buf.WriteString(key)
 
-		if value != "" {
+		if value != nil && !value.IsEmpty() {
 			buf.WriteString("=\"")
-			buf.WriteString(value)
+			buf.WriteString(value.OuterHTML())
 			buf.WriteByte('"')
 		}
 
@@ -86,11 +86,11 @@ func (t *element) OuterHTML() string {
 	return buf.String()
 }
 
-func (t *element) GetAttribute(name string) string {
+func (t *element) GetAttribute(name string) AttributeValue {
 	return t.attributes.GetAttribute(name)
 }
 
-func (t *element) SetAttribute(name string, value string) {
+func (t *element) SetAttribute(name string, value AttributeValue) {
 	t.attributes.SetAttribute(name, value)
 }
 
