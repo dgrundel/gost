@@ -22,6 +22,7 @@ const (
 	TagName                    ParseState = "TagName"
 	SelfClosingStartTag        ParseState = "SelfClosingStartTag"
 	BeforeAttributeName        ParseState = "BeforeAttributeName"
+	SpreadAttribute            ParseState = "SpreadAttribute"
 	AttributeName              ParseState = "AttributeName"
 	AfterAttributeName         ParseState = "AfterAttributeName"
 	BeforeAttributeValue       ParseState = "BeforeAttributeValue"
@@ -95,6 +96,7 @@ var _parseStateHandlers = map[ParseState](func(ctx *parseContext) error){
 	TagName:                    handleTagName,
 	SelfClosingStartTag:        handleSelfClosingStartTag,
 	BeforeAttributeName:        handleBeforeAttributeName,
+	SpreadAttribute:            handleSpreadAttribute,
 	AttributeName:              handleAttributeName,
 	AfterAttributeName:         handleAfterAttributeName,
 	BeforeAttributeValue:       handleBeforeAttributeValue,
@@ -192,6 +194,8 @@ func handleTagName(ctx *parseContext) error {
 	switch {
 	case unicode.IsSpace(r):
 		ctx.State = BeforeAttributeName
+	case r == '{':
+		ctx.State = SpreadAttribute
 	case r == '/':
 		ctx.State = SelfClosingStartTag
 	case r == '>':
@@ -233,6 +237,8 @@ func handleBeforeAttributeName(ctx *parseContext) error {
 	switch {
 	case unicode.IsSpace(r):
 		break
+	case r == '{':
+		ctx.State = SpreadAttribute
 	case r == '/':
 		ctx.State = SelfClosingStartTag
 	case r == '>':
@@ -252,6 +258,19 @@ func handleBeforeAttributeName(ctx *parseContext) error {
 	default:
 		ctx.Tag.attrName.WriteRune(r)
 		ctx.State = AttributeName
+	}
+	return nil
+}
+
+func handleSpreadAttribute(ctx *parseContext) error {
+	r := ctx.Rune
+	switch {
+	case r == '}':
+		ctx.Tag.attributes.SetSpreadAttribute(nodes.AttributeValueSpread(ctx.Buf.String()))
+		ctx.Buf.Reset()
+		ctx.State = AfterAttributeValueQuoted
+	default:
+		ctx.Buf.WriteRune(r)
 	}
 	return nil
 }
@@ -892,9 +911,14 @@ func applyTag(ctx *parseContext, void bool) (nodes.Element, error) {
 		elem = nodes.NewElement(name, void)
 
 		ctx.Tag.attributes.Iterator()(func(key string, value nodes.AttributeValue) bool {
-			elem.SetAttribute(key, value)
+			elem.Attributes().SetAttribute(key, value)
 			return true
 		})
+
+		spread := ctx.Tag.attributes.GetSpreadAttribute()
+		if !spread.IsEmpty() {
+			elem.Attributes().SetSpreadAttribute(spread)
+		}
 
 		ctx.Parent.Append(elem)
 

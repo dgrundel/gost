@@ -256,6 +256,8 @@ func TestParseExpressions(t *testing.T) {
 				}
 
 				assert.Equal(t, expected, document.OuterHTML())
+
+				t.Log(document.String())
 			}
 		})
 	}

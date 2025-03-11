@@ -2,7 +2,6 @@ package nodes
 
 import (
 	"bytes"
-	"encoding/json"
 	"strings"
 )
 
@@ -27,8 +26,7 @@ var _voidElements = map[string]bool{
 type Element interface {
 	Node
 	IsVoid() bool
-	GetAttribute(string) AttributeValue
-	SetAttribute(string, AttributeValue)
+	Attributes() Attributes
 }
 
 type element struct {
@@ -68,6 +66,12 @@ func (t *element) OuterHTML() string {
 		return true
 	})
 
+	spread := t.attributes.GetSpreadAttribute()
+	if !spread.IsEmpty() {
+		buf.WriteByte(' ')
+		buf.WriteString(spread.OuterHTML())
+	}
+
 	buf.WriteByte('>')
 
 	if t.void {
@@ -85,20 +89,14 @@ func (t *element) OuterHTML() string {
 	return buf.String()
 }
 
-func (t *element) GetAttribute(name string) AttributeValue {
-	return t.attributes.GetAttribute(name)
-}
-
-func (t *element) SetAttribute(name string, value AttributeValue) {
-	t.attributes.SetAttribute(name, value)
+func (t *element) Attributes() Attributes {
+	return t.attributes
 }
 
 func (t *element) String() string {
-	attrs, _ := json.Marshal(t.attributes.All())
-
 	var fields = []string{
 		"\"name\": \"" + t.Name() + "\"",
-		"\"attrs\": " + string(attrs),
+		"\"attrs\": " + t.attributes.String(),
 	}
 
 	if len(t.Children()) > 0 {
