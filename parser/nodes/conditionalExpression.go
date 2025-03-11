@@ -40,15 +40,15 @@ func (e *conditionalExpression) OuterHTML() string {
 	if e.prev == nil && e.condition != "" {
 		buf.WriteString("{if ")
 		buf.WriteString(e.condition)
-		buf.WriteString("} ")
+		buf.WriteString("}")
 	} else if e.prev != nil && e.condition != "" {
 		buf.WriteString("{else if ")
 		buf.WriteString(e.condition)
-		buf.WriteString("} ")
+		buf.WriteString("}")
 	} else if e.prev != nil && e.condition == "" {
-		buf.WriteString("{else} ")
+		buf.WriteString("{else}")
 	} else {
-		buf.WriteString("{if true} ")
+		buf.WriteString("{if true}")
 	}
 
 	for _, child := range e.children {

@@ -721,6 +721,7 @@ func handleIfConditionalExpression(ctx *parseContext) error {
 		ctx.Parent.Append(expr)
 		ctx.Parent = expr
 		ctx.State = Data
+		ctx.Buf.Reset()
 	default:
 		ctx.Buf.WriteRune(r)
 	}
