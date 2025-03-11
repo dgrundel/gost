@@ -802,7 +802,11 @@ func handleForLoopExpression(ctx *parseContext) error {
 		indexKey := matches[1]
 		itemKey := matches[2]
 		collectionKey := matches[3]
-		typ := matches[4]
+
+		typ, ok := nodes.ParseExpressionType(matches[4])
+		if matches[4] != "" && !ok {
+			return parseErr(ctx, "invalid for loop expression type: "+matches[4])
+		}
 		expr := nodes.NewLoopExpression(indexKey, itemKey, collectionKey, typ)
 
 		ctx.Parent.Append(expr)

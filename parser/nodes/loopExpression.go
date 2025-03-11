@@ -13,10 +13,10 @@ type loopExpression struct {
 	indexKey string
 	valueKey string
 	itemsKey string
-	typ      string
+	typ      ExpressionType
 }
 
-func NewLoopExpression(indexKey, valueKey, itemsKey, typ string) LoopExpression {
+func NewLoopExpression(indexKey, valueKey, itemsKey string, typ ExpressionType) LoopExpression {
 	return &loopExpression{
 		indexKey: indexKey,
 		valueKey: valueKey,
@@ -33,9 +33,9 @@ func (e *loopExpression) OuterHTML() string {
 	buf.WriteString(e.valueKey)
 	buf.WriteString(" in ")
 	buf.WriteString(e.itemsKey)
-	if e.typ != "" {
+	if e.typ != nil {
 		buf.WriteString(":")
-		buf.WriteString(e.typ)
+		buf.WriteString(e.typ.String())
 	}
 	buf.WriteString("}")
 
@@ -56,7 +56,9 @@ func (e *loopExpression) String() string {
 	buf.WriteString("\", \"itemsKey\": \"")
 	buf.WriteString(e.itemsKey)
 	buf.WriteString("\", \"typ\": \"")
-	buf.WriteString(e.typ)
+	if e.typ != nil {
+		buf.WriteString(e.typ.String())
+	}
 	buf.WriteString("\", \"children\": [")
 	for _, child := range e.children {
 		buf.WriteString(child.String())

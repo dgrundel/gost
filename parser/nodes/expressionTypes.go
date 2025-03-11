@@ -109,6 +109,9 @@ func ParseExpressionType(s string) (ExpressionType, bool) {
 		return NewExpressionType(ExpressionBaseTypeMap, keyType, valueType), true
 	}
 
-	t, ok := ParseExpressionBaseType(s)
-	return NewExpressionType(t, "", t), ok
+	if t, ok := ParseExpressionBaseType(s); ok {
+		return NewExpressionType(t, "", t), ok
+	}
+
+	return nil, false
 }
