@@ -1,5 +1,10 @@
 package nodes
 
+import (
+	"regexp"
+	"strings"
+)
+
 type ExpressionBaseType string
 
 const (
@@ -11,28 +16,98 @@ const (
 	ExpressionBaseTypeMap    ExpressionBaseType = "map"
 )
 
-type ExpressionType struct {
-	BaseType  ExpressionBaseType
-	KeyType   ExpressionBaseType
-	ValueType ExpressionBaseType
+var expressionBaseTypeMap = map[string]ExpressionBaseType{
+	"string": ExpressionBaseTypeString,
+	"int":    ExpressionBaseTypeInt,
+	"float":  ExpressionBaseTypeFloat,
+	"bool":   ExpressionBaseTypeBool,
+	"array":  ExpressionBaseTypeArray,
+	"map":    ExpressionBaseTypeMap,
+}
+
+func ParseExpressionBaseType(s string) (ExpressionBaseType, bool) {
+	t, ok := expressionBaseTypeMap[s]
+	return t, ok
+}
+
+type ExpressionType interface {
+	BaseType() ExpressionBaseType
+	KeyType() ExpressionBaseType
+	ValueType() ExpressionBaseType
+}
+
+type expressionType struct {
+	baseType  ExpressionBaseType
+	keyType   ExpressionBaseType
+	valueType ExpressionBaseType
 }
 
 func NewExpressionType(baseType ExpressionBaseType, keyType ExpressionBaseType, valueType ExpressionBaseType) ExpressionType {
-	return ExpressionType{
-		BaseType:  baseType,
-		KeyType:   keyType,
-		ValueType: valueType,
+	return &expressionType{
+		baseType:  baseType,
+		keyType:   keyType,
+		valueType: valueType,
 	}
 }
 
-func (e *ExpressionType) String() string {
-	if e.BaseType == ExpressionBaseTypeArray {
-		return string(e.ValueType) + "[]"
+func (e *expressionType) BaseType() ExpressionBaseType {
+	return e.baseType
+}
+
+func (e *expressionType) KeyType() ExpressionBaseType {
+	return e.keyType
+}
+
+func (e *expressionType) ValueType() ExpressionBaseType {
+	return e.valueType
+}
+
+func (e *expressionType) String() string {
+	if e.baseType == ExpressionBaseTypeArray {
+		return string(e.valueType) + "[]"
 	}
 
-	if e.BaseType == ExpressionBaseTypeMap {
-		return "map[" + string(e.KeyType) + ", " + string(e.ValueType) + "]"
+	if e.baseType == ExpressionBaseTypeMap {
+		return "map[" + string(e.keyType) + ", " + string(e.valueType) + "]"
 	}
 
-	return string(e.BaseType)
+	return string(e.baseType)
+}
+
+var _arrayTypeRegex = regexp.MustCompile(`^\s*(\w+)\[\]\s*$`)
+var _mapTypeRegex = regexp.MustCompile(`^\s*map\[\s*(.*)\s*,\s*(.*)\s*\]\s*$`)
+
+func ParseExpressionType(s string) (ExpressionType, bool) {
+	if strings.HasSuffix(s, "[]") {
+		matches := _arrayTypeRegex.FindStringSubmatch(s)
+		if len(matches) != 2 {
+			return nil, false
+		}
+
+		valueType, ok := ParseExpressionBaseType(s[:len(s)-2])
+		if !ok {
+			return nil, false
+		}
+		return NewExpressionType(ExpressionBaseTypeArray, ExpressionBaseTypeInt, valueType), true
+	}
+
+	if strings.HasPrefix(s, "map[") {
+		matches := _mapTypeRegex.FindStringSubmatch(s)
+		if len(matches) != 3 {
+			return nil, false
+		}
+
+		keyType, ok := ParseExpressionBaseType(matches[1])
+		if !ok {
+			return nil, false
+		}
+		valueType, ok := ParseExpressionBaseType(matches[2])
+		if !ok {
+			return nil, false
+		}
+		return NewExpressionType(ExpressionBaseTypeMap, keyType, valueType), true
+	}
+
+	t, ok := ParseExpressionBaseType(s)
+	return NewExpressionType(t, "", t), ok
 }
