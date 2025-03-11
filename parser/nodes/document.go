@@ -1,5 +1,10 @@
 package nodes
 
+import (
+	"bytes"
+	"fmt"
+)
+
 type Document interface {
 	Node
 	GetDeclaredTypes() map[string]ExpressionType
@@ -28,4 +33,19 @@ func (t *document) AddDeclaredType(name string, expressionType ExpressionType) {
 
 func (t *document) Parent() Node {
 	return nil
+}
+
+func (t *document) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("{\"name\": \"#document\", \"declaredTypes\": [")
+	for name, expressionType := range t.declaredTypes {
+		buf.WriteString(fmt.Sprintf("{\"name\": \"%s\", \"expressionType\": \"%s\"}, ", name, expressionType.String()))
+	}
+	buf.WriteString("], \"children\": [")
+	for _, child := range t.children {
+		buf.WriteString(child.String())
+		buf.WriteString(", ")
+	}
+	buf.WriteString("]}")
+	return buf.String()
 }
