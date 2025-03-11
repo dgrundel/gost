@@ -61,9 +61,8 @@ func (t *element) OuterHTML() string {
 		buf.WriteString(key)
 
 		if value != nil && !value.IsEmpty() {
-			buf.WriteString("=\"")
+			buf.WriteString("=")
 			buf.WriteString(value.OuterHTML())
-			buf.WriteByte('"')
 		}
 
 		return true

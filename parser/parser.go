@@ -27,6 +27,7 @@ const (
 	BeforeAttributeValue       ParseState = "BeforeAttributeValue"
 	AttributeValueDoubleQuoted ParseState = "AttributeValueDoubleQuoted"
 	AttributeValueSingleQuoted ParseState = "AttributeValueSingleQuoted"
+	AttributeValueExpression   ParseState = "AttributeValueExpression"
 	AttributeValueUnquoted     ParseState = "AttributeValueUnquoted"
 	AfterAttributeValueQuoted  ParseState = "AfterAttributeValueQuoted"
 	RawText                    ParseState = "RawText"
@@ -99,6 +100,7 @@ var _parseStateHandlers = map[ParseState](func(ctx *parseContext) error){
 	BeforeAttributeValue:       handleBeforeAttributeValue,
 	AttributeValueDoubleQuoted: handleAttributeValueDoubleQuoted,
 	AttributeValueSingleQuoted: handleAttributeValueSingleQuoted,
+	AttributeValueExpression:   handleAttributeValueExpression,
 	AttributeValueUnquoted:     handleAttributeValueUnquoted,
 	AfterAttributeValueQuoted:  handleAfterAttributeValueQuoted,
 	RawText:                    handleRawText,
@@ -260,7 +262,7 @@ func handleAttributeName(ctx *parseContext) error {
 	case unicode.IsSpace(r):
 		ctx.State = AfterAttributeName
 	case r == '/':
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -268,7 +270,7 @@ func handleAttributeName(ctx *parseContext) error {
 	case r == '=':
 		ctx.State = BeforeAttributeValue
 	case r == '>':
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -297,7 +299,7 @@ func handleAfterAttributeName(ctx *parseContext) error {
 	case unicode.IsSpace(r):
 		break
 	case r == '/':
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -305,7 +307,7 @@ func handleAfterAttributeName(ctx *parseContext) error {
 	case r == '=':
 		ctx.State = BeforeAttributeValue
 	case r == '>':
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -321,7 +323,7 @@ func handleAfterAttributeName(ctx *parseContext) error {
 			ctx.State = Data
 		}
 	case r >= 'A' && r <= 'Z': // start a new attribute
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -329,7 +331,7 @@ func handleAfterAttributeName(ctx *parseContext) error {
 		ctx.Tag.attrName.WriteRune(unicode.ToLower(r))
 		ctx.State = AttributeName
 	default: // start a new attribute
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -349,8 +351,10 @@ func handleBeforeAttributeValue(ctx *parseContext) error {
 		ctx.State = AttributeValueDoubleQuoted
 	case r == '\'':
 		ctx.State = AttributeValueSingleQuoted
+	case r == '{':
+		ctx.State = AttributeValueExpression
 	case r == '>':
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -376,7 +380,7 @@ func handleAttributeValueDoubleQuoted(ctx *parseContext) error {
 	r := ctx.Rune
 	switch r {
 	case '"':
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -391,7 +395,22 @@ func handleAttributeValueSingleQuoted(ctx *parseContext) error {
 	r := ctx.Rune
 	switch r {
 	case '\'':
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
+		if err != nil {
+			return err
+		}
+		ctx.State = AfterAttributeValueQuoted
+	default:
+		ctx.Tag.attrValue.WriteRune(r)
+	}
+	return nil
+}
+
+func handleAttributeValueExpression(ctx *parseContext) error {
+	r := ctx.Rune
+	switch r {
+	case '}':
+		err := applyAttr(ctx, true)
 		if err != nil {
 			return err
 		}
@@ -406,13 +425,13 @@ func handleAttributeValueUnquoted(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
 	case unicode.IsSpace(r):
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
 		ctx.State = BeforeAttributeName
 	case r == '>':
-		err := applyAttr(ctx)
+		err := applyAttr(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -888,7 +907,7 @@ func applyTag(ctx *parseContext, void bool) (nodes.Element, error) {
 	return elem, nil
 }
 
-func applyAttr(ctx *parseContext) error {
+func applyAttr(ctx *parseContext, isExpression bool) error {
 	t := ctx.Tag
 	if t == nil {
 		return parseErr(ctx, "no tag for attribute")
@@ -898,7 +917,11 @@ func applyAttr(ctx *parseContext) error {
 	if name == "" {
 		return parseErr(ctx, "empty attr name")
 	}
-	t.attributes.SetAttribute(name, nodes.AttributeValueString(value))
+	if isExpression {
+		t.attributes.SetAttribute(name, nodes.AttributeValueExpression(value))
+	} else {
+		t.attributes.SetAttribute(name, nodes.AttributeValueString(value))
+	}
 	t.attrName.Reset()
 	t.attrValue.Reset()
 	return nil
