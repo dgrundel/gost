@@ -8,7 +8,7 @@ import (
 type Document interface {
 	Node
 	GetDeclaredTypes() map[string]ExpressionType
-	AddDeclaredType(name string, expressionType ExpressionType)
+	AddDeclaredType(name string, expressionType ExpressionType) error
 }
 
 type document struct {
@@ -27,8 +27,12 @@ func (t *document) GetDeclaredTypes() map[string]ExpressionType {
 	return t.declaredTypes
 }
 
-func (t *document) AddDeclaredType(name string, expressionType ExpressionType) {
+func (t *document) AddDeclaredType(name string, expressionType ExpressionType) error {
+	if declared, ok := t.declaredTypes[name]; ok && !declared.Equals(expressionType) {
+		return fmt.Errorf("%s is already declared with different type: %s", name, declared.String())
+	}
 	t.declaredTypes[name] = expressionType
+	return nil
 }
 
 func (t *document) Parent() Node {

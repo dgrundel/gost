@@ -11,10 +11,10 @@ type OutputExpression interface {
 type outputExpression struct {
 	node
 	key string
-	typ string
+	typ ExpressionType
 }
 
-func NewOutputExpression(key string, typ string) OutputExpression {
+func NewOutputExpression(key string, typ ExpressionType) OutputExpression {
 	return &outputExpression{
 		node: node{
 			name: "#output-expression",
@@ -32,9 +32,9 @@ func (o *outputExpression) OuterHTML() string {
 	var buf bytes.Buffer
 	buf.WriteString("{")
 	buf.WriteString(o.key)
-	if o.typ != "" {
+	if o.typ != nil {
 		buf.WriteString(":")
-		buf.WriteString(o.typ)
+		buf.WriteString(o.typ.String())
 	}
 	buf.WriteString("}")
 	return buf.String()
@@ -49,5 +49,13 @@ func (o *outputExpression) Append(children ...Node) {
 }
 
 func (o *outputExpression) String() string {
-	return "{\"name\": \"#output-expression\", \"key\": \"" + string(o.key) + "\"}"
+	var buf bytes.Buffer
+	buf.WriteString("{\"name\": \"#output-expression\", \"key\": \"")
+	buf.WriteString(o.key)
+	buf.WriteString("\", \"typ\": \"")
+	if o.typ != nil {
+		buf.WriteString(o.typ.String())
+	}
+	buf.WriteString("}")
+	return buf.String()
 }

@@ -34,6 +34,7 @@ type ExpressionType interface {
 	BaseType() ExpressionBaseType
 	KeyType() ExpressionBaseType
 	ValueType() ExpressionBaseType
+	Equals(other ExpressionType) bool
 	String() string
 }
 
@@ -61,6 +62,12 @@ func (e *expressionType) KeyType() ExpressionBaseType {
 
 func (e *expressionType) ValueType() ExpressionBaseType {
 	return e.valueType
+}
+
+func (e *expressionType) Equals(other ExpressionType) bool {
+	return e.baseType == other.BaseType() &&
+		e.keyType == other.KeyType() &&
+		e.valueType == other.ValueType()
 }
 
 func (e *expressionType) String() string {

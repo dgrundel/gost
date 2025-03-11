@@ -694,7 +694,7 @@ func handleExpressionName(ctx *parseContext) error {
 			ifexpr.SetNext(expr)
 			ctx.Parent = expr
 		} else {
-			expr := nodes.NewOutputExpression(str, "")
+			expr := nodes.NewOutputExpression(str, nil)
 			ctx.Parent.Append(expr)
 		}
 		ctx.Buf.Reset()
@@ -807,7 +807,10 @@ func handleForLoopExpression(ctx *parseContext) error {
 			return parseErr(ctx, "invalid for loop expression type: "+matches[4])
 		}
 		if ok {
-			ctx.Document.AddDeclaredType(collectionKey, typ)
+			err := ctx.Document.AddDeclaredType(collectionKey, typ)
+			if err != nil {
+				return parseErr(ctx, err.Error())
+			}
 		}
 		expr := nodes.NewLoopExpression(indexKey, itemKey, collectionKey, typ)
 
@@ -834,7 +837,7 @@ func handleOutputExpressionKey(ctx *parseContext) error {
 		ctx.State = OutputExpressionType
 	case r == '}':
 		key := ctx.Temp.String()
-		expr := nodes.NewOutputExpression(key, "")
+		expr := nodes.NewOutputExpression(key, nil)
 		ctx.Parent.Append(expr)
 		ctx.Buf.Reset()
 		ctx.State = Data
@@ -855,7 +858,16 @@ func handleOutputExpressionType(ctx *parseContext) error {
 		}
 
 		key := ctx.Temp.String()
-		typ := ctx.Buf.String()
+		typ, ok := nodes.ParseExpressionType(ctx.Buf.String())
+		if !ok {
+			return parseErr(ctx, "invalid output expression type: "+ctx.Buf.String())
+		}
+		if ok {
+			err := ctx.Document.AddDeclaredType(key, typ)
+			if err != nil {
+				return parseErr(ctx, err.Error())
+			}
+		}
 		expr := nodes.NewOutputExpression(key, typ)
 		ctx.Parent.Append(expr)
 		ctx.Temp.Reset()
