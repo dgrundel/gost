@@ -44,16 +44,6 @@ const (
 	ForLoopExpression          ParseState = "ForLoopExpression"
 	OutputExpressionKey        ParseState = "OutputExpressionKey"
 	OutputExpressionType       ParseState = "OutputExpressionType"
-
-	// CommentEndDash             ParseState = "CommentEndDash"
-	// CommentEnd                 ParseState = "CommentEnd"
-	// CommentStart               ParseState = "CommentStart"
-	// CommentStartDash           ParseState = "CommentStartDash"
-	// CommentEndBang             ParseState = "CommentEndBang"
-	// Doctype                    ParseState = "Doctype"
-	// BeforeDoctypeName          ParseState = "BeforeDoctypeName"
-	// DoctypeName                ParseState = "DoctypeName"
-	// AfterDoctypeName           ParseState = "AfterDoctypeName"
 )
 
 var _forLoopRegex = regexp.MustCompile(`^\s*(\w+),\s*(\w+)\s+in\s+(\w+)\s*(?:\:\s*([A-Za-z0-9_\]\[-]+))?\s*$`)
