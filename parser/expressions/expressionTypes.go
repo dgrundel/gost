@@ -86,6 +86,8 @@ var _arrayTypeRegex = regexp.MustCompile(`^\s*(\w+)\[\]\s*$`)
 var _mapTypeRegex = regexp.MustCompile(`^\s*map\[\s*(.*)\s*,\s*(.*)\s*\]\s*$`)
 
 func ParseExpressionType(s string) (ExpressionType, bool) {
+	s = strings.TrimSpace(s)
+
 	if strings.HasSuffix(s, "[]") {
 		matches := _arrayTypeRegex.FindStringSubmatch(s)
 		if len(matches) != 2 {

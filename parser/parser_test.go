@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bytes"
+	"gost/parser/expressions"
 	"os"
 	"strings"
 	"testing"
@@ -156,30 +157,49 @@ func TestParseExpressions(t *testing.T) {
 		name     string
 		html     string
 		expected string
+		types    map[string]expressions.ExpressionType
 	}{
 		{
 			name:     "emit value with type",
 			html:     `<p>Hello, {name: string}!</p>`,
 			expected: `<p>Hello, {name:string}!</p>`,
+			types: map[string]expressions.ExpressionType{
+				"name": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
+			},
 		}, {
 			name:     "emit value again without redeclaration",
 			html:     `<p>The name is {lastName: string}, {firstName: string} {lastName}.</p>`,
 			expected: `<p>The name is {lastName:string}, {firstName:string} {lastName}.</p>`,
+			types: map[string]expressions.ExpressionType{
+				"lastName":  expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
+				"firstName": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
+			},
 		}, {
 			name: "full attribute",
 			html: `<div>
 				<img src={imgSrc: string} alt={imgAlt: string}>
 			</div>`,
+			types: map[string]expressions.ExpressionType{
+				"imgSrc": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
+				"imgAlt": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
+			},
 		}, {
 			name: "partial attribute",
 			html: `<div>
 				<img src={imgSrc: string} alt="A photo of {name: string}">
 			</div>`,
+			types: map[string]expressions.ExpressionType{
+				"imgSrc": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
+				// "name":   expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
+			},
 		}, {
 			name: "spread attributes",
 			html: `<div>
 				<img {...attrs: map[string, string]}>
 			</div>`,
+			// types: map[string]expressions.ExpressionType{
+			// 	"attrs": expressions.NewExpressionType(expressions.ExpressionBaseTypeMap, expressions.ExpressionBaseTypeString, expressions.ExpressionBaseTypeString),
+			// },
 		}, {
 			name: "simple if",
 			html: `<div>
@@ -188,11 +208,14 @@ func TestParseExpressions(t *testing.T) {
 		}, {
 			name: "simple if with type declaration",
 			html: `<div>
-				{if qty > 0: int}You have {qty} item(s).{/if}
+				{if qty: int > 0}You have {qty} item(s).{/if}
 			</div>`,
 			expected: `<div>
-				{if qty > 0:int}You have {qty} item(s).{/if}
+				{if qty:int > 0}You have {qty} item(s).{/if}
 			</div>`,
+			types: map[string]expressions.ExpressionType{
+				"qty": expressions.NewExpressionType(expressions.ExpressionBaseTypeInt, "", expressions.ExpressionBaseTypeInt),
+			},
 		}, {
 			name: "if...else (1)",
 			html: `<div>
@@ -234,6 +257,9 @@ func TestParseExpressions(t *testing.T) {
 					<li data-index={i}>{item}</li>
 				{/for}
 			</ul>`,
+			types: map[string]expressions.ExpressionType{
+				"items": expressions.NewExpressionType(expressions.ExpressionBaseTypeArray, expressions.ExpressionBaseTypeInt, expressions.ExpressionBaseTypeString),
+			},
 		}, {
 			name: "for loop without type declaration",
 			html: `<ul>
@@ -259,6 +285,20 @@ func TestParseExpressions(t *testing.T) {
 				}
 
 				assert.Equal(t, expected, document.OuterHTML())
+
+				if tt.types != nil {
+					declaredTypes := document.GetDeclaredTypes()
+					assert.Equal(t, len(tt.types), len(declaredTypes), "number of declared types mismatch")
+					for key, expectedType := range tt.types {
+						actualType, exists := declaredTypes[key]
+						assert.True(t, exists, "type for %s should exist", key)
+						if exists {
+							assert.True(t, expectedType.Equals(actualType),
+								"type mismatch for %s: expected %s, got %s",
+								key, expectedType.String(), actualType.String())
+						}
+					}
+				}
 
 				t.Log(document.String())
 			}

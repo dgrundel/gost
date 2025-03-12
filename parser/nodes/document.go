@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"gost/parser/expressions"
+	"strings"
 )
 
 type Document interface {
@@ -29,6 +30,10 @@ func (t *document) GetDeclaredTypes() map[string]expressions.ExpressionType {
 }
 
 func (t *document) AddDeclaredType(name string, expressionType expressions.ExpressionType) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return fmt.Errorf("empty type name")
+	}
 	if declared, ok := t.declaredTypes[name]; ok && !declared.Equals(expressionType) {
 		return fmt.Errorf("%s is already declared with different type: %s", name, declared.String())
 	}
