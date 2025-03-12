@@ -4,42 +4,42 @@ import (
 	"bytes"
 )
 
-type ConditionalExpression interface {
+type ConditionalBlock interface {
 	Node
 	SetCondition(string)
 	Condition() string
-	SetNext(ConditionalExpression)
-	Next() ConditionalExpression
+	SetNext(ConditionalBlock)
+	Next() ConditionalBlock
 }
 
-type conditionalExpression struct {
+type conditionalBlock struct {
 	node
-	condition string
-	next      ConditionalExpression
+	condition string // TODO: make this an expression
+	next      ConditionalBlock
 }
 
-func NewConditionalExpression() ConditionalExpression {
-	return &conditionalExpression{}
+func NewConditionalBlock() ConditionalBlock {
+	return &conditionalBlock{}
 }
 
-func (e *conditionalExpression) SetCondition(condition string) {
+func (e *conditionalBlock) SetCondition(condition string) {
 	e.condition = condition
 }
 
-func (e *conditionalExpression) Condition() string {
+func (e *conditionalBlock) Condition() string {
 	return e.condition
 }
 
-func (e *conditionalExpression) SetNext(next ConditionalExpression) {
+func (e *conditionalBlock) SetNext(next ConditionalBlock) {
 	next.setParent(e.Parent())
 	e.next = next
 }
 
-func (e *conditionalExpression) Next() ConditionalExpression {
+func (e *conditionalBlock) Next() ConditionalBlock {
 	return e.next
 }
 
-func (e *conditionalExpression) OuterHTML() string {
+func (e *conditionalBlock) OuterHTML() string {
 	var buf bytes.Buffer
 
 	buf.WriteString("{if ")
@@ -72,10 +72,10 @@ func (e *conditionalExpression) OuterHTML() string {
 	return buf.String()
 }
 
-func (e *conditionalExpression) String() string {
+func (e *conditionalBlock) String() string {
 	var nextStr string
 	if e.next != nil {
 		nextStr = e.next.String()
 	}
-	return "{\"name\": \"#conditional-expression\", \"condition\": \"" + e.condition + "\", \"next\": " + nextStr + "}"
+	return "{\"name\": \"#conditional-block\", \"condition\": \"" + e.condition + "\", \"next\": " + nextStr + "}"
 }

@@ -4,11 +4,11 @@ import (
 	"bytes"
 )
 
-type LoopExpression interface {
+type LoopBlock interface {
 	Node
 }
 
-type loopExpression struct {
+type loopBlock struct {
 	node
 	indexKey string
 	valueKey string
@@ -16,8 +16,8 @@ type loopExpression struct {
 	typ      ExpressionType
 }
 
-func NewLoopExpression(indexKey, valueKey, itemsKey string, typ ExpressionType) LoopExpression {
-	return &loopExpression{
+func NewLoopBlock(indexKey, valueKey, itemsKey string, typ ExpressionType) LoopBlock {
+	return &loopBlock{
 		indexKey: indexKey,
 		valueKey: valueKey,
 		itemsKey: itemsKey,
@@ -25,7 +25,7 @@ func NewLoopExpression(indexKey, valueKey, itemsKey string, typ ExpressionType) 
 	}
 }
 
-func (e *loopExpression) OuterHTML() string {
+func (e *loopBlock) OuterHTML() string {
 	var buf bytes.Buffer
 	buf.WriteString("{for ")
 	buf.WriteString(e.indexKey)
@@ -47,9 +47,9 @@ func (e *loopExpression) OuterHTML() string {
 	return buf.String()
 }
 
-func (e *loopExpression) String() string {
+func (e *loopBlock) String() string {
 	var buf bytes.Buffer
-	buf.WriteString("{\"name\": \"#loop-expression\", \"indexKey\": \"")
+	buf.WriteString("{\"name\": \"#loop-block\", \"indexKey\": \"")
 	buf.WriteString(e.indexKey)
 	buf.WriteString("\", \"valueKey\": \"")
 	buf.WriteString(e.valueKey)

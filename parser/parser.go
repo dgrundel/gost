@@ -686,11 +686,11 @@ func handleExpressionName(ctx *parseContext) error {
 			return parseErr(ctx, "invalid empty if/for expression: "+str)
 		}
 		if str == "else" {
-			ifexpr, ok := ctx.Parent.(nodes.ConditionalExpression)
+			ifexpr, ok := ctx.Parent.(nodes.ConditionalBlock)
 			if !ok {
 				return parseErr(ctx, "mismatched else expression")
 			}
-			expr := nodes.NewConditionalExpression()
+			expr := nodes.NewConditionalBlock()
 			ifexpr.SetNext(expr)
 			ctx.Parent = expr
 		} else {
@@ -715,7 +715,7 @@ func handleEndExpression(ctx *parseContext) error {
 		ctx.Buf.Reset()
 		// can only close if/for expressions
 		if str == "if" {
-			_, ok := ctx.Parent.(nodes.ConditionalExpression)
+			_, ok := ctx.Parent.(nodes.ConditionalBlock)
 			if !ok {
 				return parseErr(ctx, "mismatched end expression: "+str)
 			}
@@ -724,7 +724,7 @@ func handleEndExpression(ctx *parseContext) error {
 			break
 		}
 		if str == "for" {
-			_, ok := ctx.Parent.(nodes.LoopExpression)
+			_, ok := ctx.Parent.(nodes.LoopBlock)
 			if !ok {
 				return parseErr(ctx, "mismatched end expression: "+str)
 			}
@@ -744,7 +744,7 @@ func handleIfConditionalExpression(ctx *parseContext) error {
 	switch {
 	case r == '}':
 		condition := ctx.Buf.String()
-		expr := nodes.NewConditionalExpression()
+		expr := nodes.NewConditionalBlock()
 		expr.SetCondition(condition)
 		ctx.Parent.Append(expr)
 		ctx.Parent = expr
@@ -767,11 +767,11 @@ func handleElseConditionalExpression(ctx *parseContext) error {
 		if ctx.Temp.String() != "if" {
 			return parseErr(ctx, "invalid else expression: "+ctx.Temp.String())
 		}
-		ifexpr, ok := ctx.Parent.(nodes.ConditionalExpression)
+		ifexpr, ok := ctx.Parent.(nodes.ConditionalBlock)
 		if !ok {
 			return parseErr(ctx, "mismatched else expression")
 		}
-		expr := nodes.NewConditionalExpression()
+		expr := nodes.NewConditionalBlock()
 		ifexpr.SetNext(expr)
 		condition := ctx.Buf.String()
 		expr.SetCondition(condition)
@@ -812,7 +812,7 @@ func handleForLoopExpression(ctx *parseContext) error {
 				return parseErr(ctx, err.Error())
 			}
 		}
-		expr := nodes.NewLoopExpression(indexKey, itemKey, collectionKey, typ)
+		expr := nodes.NewLoopBlock(indexKey, itemKey, collectionKey, typ)
 
 		ctx.Parent.Append(expr)
 		ctx.Parent = expr
