@@ -179,6 +179,9 @@ func TestParseExpressions(t *testing.T) {
 			html: `<div>
 				<img src={imgSrc: string} alt={imgAlt: string}>
 			</div>`,
+			expected: `<div>
+				<img src={imgSrc:string} alt={imgAlt:string}>
+			</div>`,
 			types: map[string]expressions.ExpressionType{
 				"imgSrc": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
 				"imgAlt": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
@@ -187,6 +190,9 @@ func TestParseExpressions(t *testing.T) {
 			name: "partial attribute",
 			html: `<div>
 				<img src={imgSrc: string} alt="A photo of {name: string}">
+			</div>`,
+			expected: `<div>
+				<img src={imgSrc:string} alt="A photo of {name: string}">
 			</div>`,
 			types: map[string]expressions.ExpressionType{
 				"imgSrc": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),

@@ -982,21 +982,15 @@ func applyAttr(ctx *parseContext, isExpression bool) error {
 		return parseErr(ctx, "empty attr name")
 	}
 	if isExpression {
-		t.attributes.SetAttribute(name, nodes.AttributeValueExpression(value))
-
-		// parse the type from the expression if present
-		parts := strings.Split(value, ":")
-		if len(parts) == 2 {
-			typ, ok := expressions.ParseExpressionType(parts[1])
-			if !ok {
-				return parseErr(ctx, "invalid output expression type: "+value)
-			} else {
-				err := ctx.Document.AddDeclaredType(parts[0], typ)
-				if err != nil {
-					return parseErr(ctx, err.Error())
-				}
-			}
+		attr, err := nodes.NewAttributeValueExpression(value)
+		if err != nil {
+			return parseErr(ctx, err.Error())
 		}
+		t.attributes.SetAttribute(name, attr)
+		if attr.ExpressionType() != nil {
+			ctx.Document.AddDeclaredType(attr.Key(), attr.ExpressionType())
+		}
+
 	} else {
 		t.attributes.SetAttribute(name, nodes.AttributeValueString(value))
 	}

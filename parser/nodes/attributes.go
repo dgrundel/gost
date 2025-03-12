@@ -1,6 +1,11 @@
 package nodes
 
-import "bytes"
+import (
+	"bytes"
+	"fmt"
+	"gost/parser/expressions"
+	"strings"
+)
 
 type Iter = func(yield func(key string, value AttributeValue) bool)
 
@@ -19,14 +24,52 @@ func (s AttributeValueString) IsEmpty() bool {
 	return s == ""
 }
 
-type AttributeValueExpression string
-
-func (e AttributeValueExpression) OuterHTML() string {
-	return "{" + string(e) + "}"
+type AttributeValueExpression interface {
+	AttributeValue
+	Key() string
+	ExpressionType() expressions.ExpressionType
 }
 
-func (e AttributeValueExpression) IsEmpty() bool {
-	return e == ""
+func NewAttributeValueExpression(s string) (AttributeValueExpression, error) {
+	parts := strings.Split(s, ":")
+	if len(parts) == 2 {
+		expressionType, ok := expressions.ParseExpressionType(parts[1])
+		if !ok {
+			return nil, fmt.Errorf("invalid expression type: %s", parts[1])
+		}
+		return &attributeValueExpression{
+			key:            strings.TrimSpace(parts[0]),
+			expressionType: expressionType,
+		}, nil
+	}
+	return &attributeValueExpression{
+		key:            strings.TrimSpace(s),
+		expressionType: nil,
+	}, nil
+}
+
+type attributeValueExpression struct {
+	expressionType expressions.ExpressionType
+	key            string
+}
+
+func (e *attributeValueExpression) OuterHTML() string {
+	if e.expressionType == nil {
+		return "{" + e.key + "}"
+	}
+	return "{" + e.key + ":" + e.expressionType.String() + "}"
+}
+
+func (e *attributeValueExpression) IsEmpty() bool {
+	return e.key == ""
+}
+
+func (e *attributeValueExpression) Key() string {
+	return e.key
+}
+
+func (e *attributeValueExpression) ExpressionType() expressions.ExpressionType {
+	return e.expressionType
 }
 
 type AttributeValueSpread string
