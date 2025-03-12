@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gost/parser/expressions"
 	"gost/parser/nodes"
 	"io"
 	"regexp"
@@ -802,7 +803,7 @@ func handleForLoopExpression(ctx *parseContext) error {
 		indexKey := matches[1]
 		itemKey := matches[2]
 		collectionKey := matches[3]
-		typ, ok := nodes.ParseExpressionType(matches[4])
+		typ, ok := expressions.ParseExpressionType(matches[4])
 		if matches[4] != "" && !ok {
 			return parseErr(ctx, "invalid for loop expression type: "+matches[4])
 		}
@@ -858,7 +859,7 @@ func handleOutputExpressionType(ctx *parseContext) error {
 		}
 
 		key := ctx.Temp.String()
-		typ, ok := nodes.ParseExpressionType(ctx.Buf.String())
+		typ, ok := expressions.ParseExpressionType(ctx.Buf.String())
 		if !ok {
 			return parseErr(ctx, "invalid output expression type: "+ctx.Buf.String())
 		}

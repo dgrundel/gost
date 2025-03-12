@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"bytes"
+	"gost/parser/expressions"
 )
 
 type OutputExpression interface {
@@ -11,10 +12,10 @@ type OutputExpression interface {
 type outputExpression struct {
 	node
 	key string
-	typ ExpressionType
+	typ expressions.ExpressionType
 }
 
-func NewOutputExpression(key string, typ ExpressionType) OutputExpression {
+func NewOutputExpression(key string, typ expressions.ExpressionType) OutputExpression {
 	return &outputExpression{
 		node: node{
 			name: "#output-expression",

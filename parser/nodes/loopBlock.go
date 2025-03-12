@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"bytes"
+	"gost/parser/expressions"
 )
 
 type LoopBlock interface {
@@ -13,10 +14,10 @@ type loopBlock struct {
 	indexKey string
 	valueKey string
 	itemsKey string
-	typ      ExpressionType
+	typ      expressions.ExpressionType
 }
 
-func NewLoopBlock(indexKey, valueKey, itemsKey string, typ ExpressionType) LoopBlock {
+func NewLoopBlock(indexKey, valueKey, itemsKey string, typ expressions.ExpressionType) LoopBlock {
 	return &loopBlock{
 		indexKey: indexKey,
 		valueKey: valueKey,

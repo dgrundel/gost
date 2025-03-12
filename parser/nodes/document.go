@@ -3,31 +3,32 @@ package nodes
 import (
 	"bytes"
 	"fmt"
+	"gost/parser/expressions"
 )
 
 type Document interface {
 	Node
-	GetDeclaredTypes() map[string]ExpressionType
-	AddDeclaredType(name string, expressionType ExpressionType) error
+	GetDeclaredTypes() map[string]expressions.ExpressionType
+	AddDeclaredType(name string, expressionType expressions.ExpressionType) error
 }
 
 type document struct {
 	node
-	declaredTypes map[string]ExpressionType
+	declaredTypes map[string]expressions.ExpressionType
 }
 
 func NewDocument() Document {
 	return &document{
 		node:          node{name: "#document"},
-		declaredTypes: make(map[string]ExpressionType),
+		declaredTypes: make(map[string]expressions.ExpressionType),
 	}
 }
 
-func (t *document) GetDeclaredTypes() map[string]ExpressionType {
+func (t *document) GetDeclaredTypes() map[string]expressions.ExpressionType {
 	return t.declaredTypes
 }
 
-func (t *document) AddDeclaredType(name string, expressionType ExpressionType) error {
+func (t *document) AddDeclaredType(name string, expressionType expressions.ExpressionType) error {
 	if declared, ok := t.declaredTypes[name]; ok && !declared.Equals(expressionType) {
 		return fmt.Errorf("%s is already declared with different type: %s", name, declared.String())
 	}
