@@ -2,6 +2,8 @@ package expressions
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseExpressionType(t *testing.T) {
@@ -153,9 +155,7 @@ func TestExpressionType_String(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.expr.String()
-			if got != tt.want {
-				t.Errorf("ExpressionType.String() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
