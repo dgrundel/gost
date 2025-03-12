@@ -19,6 +19,11 @@ func TestParseBooleanExpression(t *testing.T) {
 			want:  "a == b",
 		},
 		{
+			name:  "simple equality with type declaration",
+			input: "a: string == b: string",
+			want:  "a: string == b: string",
+		},
+		{
 			name:  "simple inequality",
 			input: "x != y",
 			want:  "x != y",
@@ -49,6 +54,11 @@ func TestParseBooleanExpression(t *testing.T) {
 			want:  "! isValid",
 		},
 		{
+			name:  "logical NOT with type declaration",
+			input: "!isValid: bool",
+			want:  "! isValid: bool",
+		},
+		{
 			name:  "parenthesized expression",
 			input: "(a == b)",
 			want:  "(a == b)",
@@ -69,6 +79,11 @@ func TestParseBooleanExpression(t *testing.T) {
 			want:  "((a == b) && c) || d",
 		},
 		{
+			name:  "nested parentheses with type declaration",
+			input: "((a: int == b: int) && c: bool) || d: bool",
+			want:  "((a: int == b: int) && c: bool) || d: bool",
+		},
+		{
 			name:    "empty expression",
 			input:   "",
 			wantErr: true,
@@ -82,12 +97,15 @@ func TestParseBooleanExpression(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewBooleanExpression(tt.input)
-			assert.Equal(t, tt.wantErr, err != nil)
-			if err != nil {
+			got, err := ParseBooleanExpression(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			assert.Equal(t, tt.want, got.String())
+			assert.NoError(t, err)
+			if got != nil {
+				assert.Equal(t, tt.want, got.String())
+			}
 		})
 	}
 }
