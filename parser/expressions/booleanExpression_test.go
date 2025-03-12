@@ -51,7 +51,7 @@ func TestParseBooleanExpression(t *testing.T) {
 		{
 			name:  "parenthesized expression",
 			input: "(a == b)",
-			want:  "a == b",
+			want:  "(a == b)",
 		},
 		{
 			name:  "complex expression with precedence",
@@ -82,11 +82,8 @@ func TestParseBooleanExpression(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseBooleanExpression(tt.input)
-			if (err != nil) != tt.wantErr {
-				assert.Equal(t, tt.wantErr, err != nil)
-				return
-			}
+			got, err := NewBooleanExpression(tt.input)
+			assert.Equal(t, tt.wantErr, err != nil)
 			if err != nil {
 				return
 			}
