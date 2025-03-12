@@ -49,7 +49,8 @@ type booleanExpression struct {
 }
 
 func NewBooleanExpression(s string) (BooleanExpression, error) {
-	return ParseBooleanExpression(s)
+	expr, _, err := ParseBooleanExpression(s)
+	return expr, err
 }
 
 func (b *booleanExpression) Left() BooleanExpression {

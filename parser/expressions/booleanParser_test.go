@@ -8,10 +8,11 @@ import (
 
 func TestParseBooleanExpression(t *testing.T) {
 	tests := []struct {
-		name    string
-		input   string
-		want    string
-		wantErr bool
+		name      string
+		input     string
+		want      string
+		wantTypes map[string]ExpressionType
+		wantErr   bool
 	}{
 		{
 			name:  "simple equality",
@@ -20,8 +21,12 @@ func TestParseBooleanExpression(t *testing.T) {
 		},
 		{
 			name:  "simple equality with type declaration",
-			input: "a: string == b: string",
-			want:  "a: string == b: string",
+			input: "a:string == b:string",
+			want:  "a:string == b:string",
+			wantTypes: map[string]ExpressionType{
+				"a": NewExpressionType(ExpressionBaseTypeString, "", ExpressionBaseTypeString),
+				"b": NewExpressionType(ExpressionBaseTypeString, "", ExpressionBaseTypeString),
+			},
 		},
 		{
 			name:  "simple inequality",
@@ -55,8 +60,11 @@ func TestParseBooleanExpression(t *testing.T) {
 		},
 		{
 			name:  "logical NOT with type declaration",
-			input: "!isValid: bool",
-			want:  "! isValid: bool",
+			input: "!isValid:bool",
+			want:  "! isValid:bool",
+			wantTypes: map[string]ExpressionType{
+				"isValid": NewExpressionType(ExpressionBaseTypeBool, "", ExpressionBaseTypeBool),
+			},
 		},
 		{
 			name:  "parenthesized expression",
@@ -80,8 +88,14 @@ func TestParseBooleanExpression(t *testing.T) {
 		},
 		{
 			name:  "nested parentheses with type declaration",
-			input: "((a: int == b: int) && c: bool) || d: bool",
-			want:  "((a: int == b: int) && c: bool) || d: bool",
+			input: "((a:int == b:int) && c:bool) || d:bool",
+			want:  "((a:int == b:int) && c:bool) || d:bool",
+			wantTypes: map[string]ExpressionType{
+				"a": NewExpressionType(ExpressionBaseTypeInt, "", ExpressionBaseTypeInt),
+				"b": NewExpressionType(ExpressionBaseTypeInt, "", ExpressionBaseTypeInt),
+				"c": NewExpressionType(ExpressionBaseTypeBool, "", ExpressionBaseTypeBool),
+				"d": NewExpressionType(ExpressionBaseTypeBool, "", ExpressionBaseTypeBool),
+			},
 		},
 		{
 			name:    "empty expression",
@@ -93,11 +107,21 @@ func TestParseBooleanExpression(t *testing.T) {
 			input:   "(a == b",
 			wantErr: true,
 		},
+		{
+			name:    "invalid type",
+			input:   "a:invalid == b",
+			wantErr: true,
+		},
+		{
+			name:    "missing type after colon",
+			input:   "a: == b",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseBooleanExpression(tt.input)
+			got, types, err := ParseBooleanExpression(tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -105,6 +129,9 @@ func TestParseBooleanExpression(t *testing.T) {
 			assert.NoError(t, err)
 			if got != nil {
 				assert.Equal(t, tt.want, got.String())
+			}
+			if tt.wantTypes != nil {
+				assert.Equal(t, tt.wantTypes, types)
 			}
 		})
 	}

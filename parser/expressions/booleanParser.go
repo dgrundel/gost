@@ -8,6 +8,7 @@ import (
 type parser struct {
 	tokens []string
 	pos    int
+	types  map[string]ExpressionType
 }
 
 // ParseBooleanExpression creates a new BooleanExpression by parsing the input string
@@ -18,16 +19,22 @@ type parser struct {
 // 3. comparison operators
 // 4. logical AND
 // 5. logical OR
-func ParseBooleanExpression(s string) (BooleanExpression, error) {
+func ParseBooleanExpression(s string) (BooleanExpression, map[string]ExpressionType, error) {
 	p := &parser{
 		tokens: tokenize(s),
+		types:  make(map[string]ExpressionType),
 	}
 
 	if len(p.tokens) == 0 {
-		return nil, fmt.Errorf("empty expression")
+		return nil, nil, fmt.Errorf("empty expression")
 	}
 
-	return p.parseWithPrecedence(0)
+	expr, err := p.parseWithPrecedence(0)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return expr, p.types, nil
 }
 
 // Get precedence level for operators
@@ -61,7 +68,7 @@ func tokenize(s string) []string {
 				tokens = append(tokens, token.String())
 				token.Reset()
 			}
-		case '(', ')':
+		case '(', ')', ':':
 			if token.Len() > 0 {
 				tokens = append(tokens, token.String())
 				token.Reset()
@@ -135,7 +142,29 @@ func (p *parser) parseWithPrecedence(precedenceLevel int) (BooleanExpression, er
 			right:    right,
 		}
 	default:
-		left = &booleanExpression{literal: token}
+		// Handle type declarations
+		if p.pos < len(p.tokens) && p.tokens[p.pos] == ":" {
+			p.pos++ // Skip the colon
+			if p.pos >= len(p.tokens) {
+				return nil, fmt.Errorf("missing type after colon")
+			}
+			typeStr := p.tokens[p.pos]
+			p.pos++
+
+			// Parse the type
+			typ, ok := ParseExpressionType(typeStr)
+			if !ok {
+				return nil, fmt.Errorf("invalid type: %s", typeStr)
+			}
+
+			// Store the type declaration
+			p.types[token] = typ
+
+			// Include type in literal
+			left = &booleanExpression{literal: token + ":" + typeStr}
+		} else {
+			left = &booleanExpression{literal: token}
+		}
 	}
 
 	// Handle infix operators
