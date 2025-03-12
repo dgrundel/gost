@@ -31,20 +31,13 @@ type AttributeValueExpression interface {
 }
 
 func NewAttributeValueExpression(s string) (AttributeValueExpression, error) {
-	parts := strings.Split(s, ":")
-	if len(parts) == 2 {
-		expressionType, ok := expressions.ParseExpressionType(parts[1])
-		if !ok {
-			return nil, fmt.Errorf("invalid expression type: %s", parts[1])
-		}
-		return &attributeValueExpression{
-			key:            strings.TrimSpace(parts[0]),
-			expressionType: expressionType,
-		}, nil
+	key, expressionType, err := splitType(s)
+	if err != nil {
+		return nil, err
 	}
 	return &attributeValueExpression{
-		key:            strings.TrimSpace(s),
-		expressionType: nil,
+		key:            key,
+		expressionType: expressionType,
 	}, nil
 }
 
@@ -72,14 +65,53 @@ func (e *attributeValueExpression) ExpressionType() expressions.ExpressionType {
 	return e.expressionType
 }
 
-type AttributeValueSpread string
-
-func (s AttributeValueSpread) OuterHTML() string {
-	return "{" + string(s) + "}"
+type AttributeValueSpread interface {
+	AttributeValue
+	Key() string
+	ExpressionType() expressions.ExpressionType
 }
 
-func (s AttributeValueSpread) IsEmpty() bool {
-	return s == ""
+func NewAttributeValueSpread(s string) (AttributeValueSpread, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, fmt.Errorf("empty spread attribute")
+	}
+	if !strings.HasPrefix(s, "...") {
+		return nil, fmt.Errorf("invalid spread attribute: %s", s)
+	}
+	s = strings.TrimPrefix(s, "...")
+	key, expressionType, err := splitType(s)
+	if err != nil {
+		return nil, err
+	}
+	return &attributeValueSpread{
+		key:            key,
+		expressionType: expressionType,
+	}, nil
+}
+
+type attributeValueSpread struct {
+	expressionType expressions.ExpressionType
+	key            string
+}
+
+func (s *attributeValueSpread) OuterHTML() string {
+	if s.expressionType == nil {
+		return "{..." + s.key + "}"
+	}
+	return "{..." + s.key + ":" + s.expressionType.String() + "}"
+}
+
+func (s *attributeValueSpread) IsEmpty() bool {
+	return s.key == ""
+}
+
+func (s *attributeValueSpread) Key() string {
+	return s.key
+}
+
+func (s *attributeValueSpread) ExpressionType() expressions.ExpressionType {
+	return s.expressionType
 }
 
 type Attributes interface {
@@ -148,10 +180,22 @@ func (a *attrs) String() string {
 		buf.WriteString(a.values[key].OuterHTML())
 	}
 
-	if !a.spread.IsEmpty() {
+	if a.spread != nil && !a.spread.IsEmpty() {
 		buf.WriteString("...:")
 		buf.WriteString(a.spread.OuterHTML())
 	}
 
 	return buf.String()
+}
+
+func splitType(s string) (string, expressions.ExpressionType, error) {
+	parts := strings.Split(s, ":")
+	if len(parts) == 2 {
+		expressionType, ok := expressions.ParseExpressionType(parts[1])
+		if !ok {
+			return "", nil, fmt.Errorf("invalid expression type: %s", parts[1])
+		}
+		return strings.TrimSpace(parts[0]), expressionType, nil
+	}
+	return strings.TrimSpace(s), nil, nil
 }

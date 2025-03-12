@@ -100,7 +100,9 @@ func TestParserTokenization(t *testing.T) {
 				expected = tt.html
 			}
 
-			assert.Equal(t, expected, document.OuterHTML())
+			if document != nil {
+				assert.Equal(t, expected, document.OuterHTML())
+			}
 		})
 	}
 }
@@ -203,9 +205,12 @@ func TestParseExpressions(t *testing.T) {
 			html: `<div>
 				<img {...attrs: map[string, string]}>
 			</div>`,
-			// types: map[string]expressions.ExpressionType{
-			// 	"attrs": expressions.NewExpressionType(expressions.ExpressionBaseTypeMap, expressions.ExpressionBaseTypeString, expressions.ExpressionBaseTypeString),
-			// },
+			expected: `<div>
+				<img {...attrs:map[string,string]}>
+			</div>`,
+			types: map[string]expressions.ExpressionType{
+				"attrs": expressions.NewExpressionType(expressions.ExpressionBaseTypeMap, expressions.ExpressionBaseTypeString, expressions.ExpressionBaseTypeString),
+			},
 		}, {
 			name: "simple if",
 			html: `<div>

@@ -76,7 +76,7 @@ func (e *expressionType) String() string {
 	}
 
 	if e.baseType == ExpressionBaseTypeMap {
-		return "map[" + string(e.keyType) + ", " + string(e.valueType) + "]"
+		return "map[" + string(e.keyType) + "," + string(e.valueType) + "]"
 	}
 
 	return string(e.baseType)

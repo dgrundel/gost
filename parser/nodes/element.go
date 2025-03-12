@@ -67,7 +67,7 @@ func (t *element) OuterHTML() string {
 	})
 
 	spread := t.attributes.GetSpreadAttribute()
-	if !spread.IsEmpty() {
+	if spread != nil && !spread.IsEmpty() {
 		buf.WriteByte(' ')
 		buf.WriteString(spread.OuterHTML())
 	}

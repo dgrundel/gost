@@ -257,7 +257,16 @@ func handleSpreadAttribute(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
 	case r == '}':
-		ctx.Tag.attributes.SetSpreadAttribute(nodes.AttributeValueSpread(ctx.Buf.String()))
+		spread, err := nodes.NewAttributeValueSpread(ctx.Buf.String())
+		if err != nil {
+			return parseErr(ctx, err.Error())
+		}
+		ctx.Tag.attributes.SetSpreadAttribute(spread)
+
+		if spread.ExpressionType() != nil {
+			ctx.Document.AddDeclaredType(spread.Key(), spread.ExpressionType())
+		}
+
 		ctx.Buf.Reset()
 		ctx.State = AfterAttributeValueQuoted
 	default:
@@ -956,7 +965,7 @@ func applyTag(ctx *parseContext, void bool) (nodes.Element, error) {
 		})
 
 		spread := ctx.Tag.attributes.GetSpreadAttribute()
-		if !spread.IsEmpty() {
+		if spread != nil && !spread.IsEmpty() {
 			elem.Attributes().SetSpreadAttribute(spread)
 		}
 
