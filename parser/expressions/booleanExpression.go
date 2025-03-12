@@ -37,6 +37,7 @@ type BooleanExpression interface {
 	Operator() BooleanOperator
 	Parentheses() bool
 	Literal() string
+	ExpressionType() ExpressionType
 	String() string
 }
 
@@ -45,6 +46,7 @@ type booleanExpression struct {
 	right       BooleanExpression
 	operator    BooleanOperator
 	literal     string
+	typ         ExpressionType
 	parentheses bool
 }
 
@@ -73,8 +75,16 @@ func (b *booleanExpression) Literal() string {
 	return b.literal
 }
 
+func (b *booleanExpression) ExpressionType() ExpressionType {
+	return b.typ
+}
+
 func (b *booleanExpression) String() string {
 	if b.literal != "" {
+		if b.typ != nil {
+			return b.literal + ":" + b.typ.String()
+		}
+
 		return b.literal
 	}
 

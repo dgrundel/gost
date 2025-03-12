@@ -161,7 +161,7 @@ func (p *parser) parseWithPrecedence(precedenceLevel int) (BooleanExpression, er
 			p.types[token] = typ
 
 			// Include type in literal
-			left = &booleanExpression{literal: token + ":" + typeStr}
+			left = &booleanExpression{literal: token, typ: typ}
 		} else {
 			left = &booleanExpression{literal: token}
 		}
