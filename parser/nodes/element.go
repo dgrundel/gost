@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"bytes"
+	"gost/parser/nodes/attributes"
 	"strings"
 )
 
@@ -26,13 +27,13 @@ var _voidElements = map[string]bool{
 type Element interface {
 	Node
 	IsVoid() bool
-	Attributes() Attributes
+	Attributes() attributes.Attributes
 }
 
 type element struct {
 	node
 	void       bool
-	attributes Attributes
+	attributes attributes.Attributes
 }
 
 func NewElement(name string, void bool) Element {
@@ -41,7 +42,7 @@ func NewElement(name string, void bool) Element {
 	return &element{
 		node:       node{name: name},
 		void:       void,
-		attributes: NewAttributes(),
+		attributes: attributes.NewAttributes(),
 	}
 }
 
@@ -54,7 +55,7 @@ func (t *element) OuterHTML() string {
 	buf.WriteByte('<')
 	buf.WriteString(t.name)
 
-	t.attributes.Iterator()(func(key string, value AttributeValue) bool {
+	t.attributes.Iterator()(func(key string, value attributes.AttributeValue) bool {
 		buf.WriteByte(' ')
 		buf.WriteString(key)
 
@@ -89,7 +90,7 @@ func (t *element) OuterHTML() string {
 	return buf.String()
 }
 
-func (t *element) Attributes() Attributes {
+func (t *element) Attributes() attributes.Attributes {
 	return t.attributes
 }
 

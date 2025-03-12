@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gost/parser/expressions"
 	"gost/parser/nodes"
+	"gost/parser/nodes/attributes"
 	"io"
 	"regexp"
 	"runtime/debug"
@@ -59,13 +60,13 @@ type tag struct {
 	name       strings.Builder
 	attrName   strings.Builder
 	attrValue  strings.Builder
-	attributes nodes.Attributes
+	attributes attributes.Attributes
 	endTag     bool
 }
 
 func newTag() *tag {
 	return &tag{
-		attributes: nodes.NewAttributes(),
+		attributes: attributes.NewAttributes(),
 	}
 }
 
@@ -257,7 +258,7 @@ func handleSpreadAttribute(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
 	case r == '}':
-		spread, err := nodes.NewAttributeValueSpread(ctx.Buf.String())
+		spread, err := attributes.NewAttributeValueSpread(ctx.Buf.String())
 		if err != nil {
 			return parseErr(ctx, err.Error())
 		}
@@ -959,7 +960,7 @@ func applyTag(ctx *parseContext, void bool) (nodes.Element, error) {
 	} else {
 		elem = nodes.NewElement(name, void)
 
-		ctx.Tag.attributes.Iterator()(func(key string, value nodes.AttributeValue) bool {
+		ctx.Tag.attributes.Iterator()(func(key string, value attributes.AttributeValue) bool {
 			elem.Attributes().SetAttribute(key, value)
 			return true
 		})
@@ -991,7 +992,7 @@ func applyAttr(ctx *parseContext, isExpression bool) error {
 		return parseErr(ctx, "empty attr name")
 	}
 	if isExpression {
-		attr, err := nodes.NewAttributeValueExpression(value)
+		attr, err := attributes.NewAttributeValueExpression(value)
 		if err != nil {
 			return parseErr(ctx, err.Error())
 		}
@@ -1001,7 +1002,7 @@ func applyAttr(ctx *parseContext, isExpression bool) error {
 		}
 
 	} else {
-		t.attributes.SetAttribute(name, nodes.AttributeValueString(value))
+		t.attributes.SetAttribute(name, attributes.AttributeValueString(value))
 	}
 	t.attrName.Reset()
 	t.attrValue.Reset()
