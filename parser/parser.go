@@ -998,11 +998,24 @@ func applyAttr(ctx *parseContext, isExpression bool) error {
 		}
 		t.attributes.SetAttribute(name, attr)
 		if attr.ExpressionType() != nil {
-			ctx.Document.AddDeclaredType(attr.Key(), attr.ExpressionType())
+			err := ctx.Document.AddDeclaredType(attr.Key(), attr.ExpressionType())
+			if err != nil {
+				return parseErr(ctx, err.Error())
+			}
 		}
 
 	} else {
-		t.attributes.SetAttribute(name, attributes.AttributeValueString(value))
+		attr, err := attributes.NewAttributeValueComposite(value)
+		if err != nil {
+			return parseErr(ctx, err.Error())
+		}
+		t.attributes.SetAttribute(name, attr)
+		for key, typ := range attr.DeclaredTypes() {
+			err := ctx.Document.AddDeclaredType(key, typ)
+			if err != nil {
+				return parseErr(ctx, err.Error())
+			}
+		}
 	}
 	t.attrName.Reset()
 	t.attrValue.Reset()

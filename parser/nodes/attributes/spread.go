@@ -10,6 +10,7 @@ type AttributeValueSpread interface {
 	AttributeValue
 	Key() string
 	ExpressionType() expressions.ExpressionType
+	IsSpread() bool
 }
 
 func NewAttributeValueSpread(s string) (AttributeValueSpread, error) {
@@ -53,4 +54,8 @@ func (s *attributeValueSpread) Key() string {
 
 func (s *attributeValueSpread) ExpressionType() expressions.ExpressionType {
 	return s.expressionType
+}
+
+func (s *attributeValueSpread) IsSpread() bool {
+	return true
 }

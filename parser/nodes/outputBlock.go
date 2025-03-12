@@ -5,18 +5,20 @@ import (
 	"gost/parser/expressions"
 )
 
-type OutputExpression interface {
+type OutputBlock interface {
 	Node
+	Key() string
+	ExpressionType() expressions.ExpressionType
 }
 
-type outputExpression struct {
+type outputBlock struct {
 	node
 	key string
 	typ expressions.ExpressionType
 }
 
-func NewOutputExpression(key string, typ expressions.ExpressionType) OutputExpression {
-	return &outputExpression{
+func NewOutputExpression(key string, typ expressions.ExpressionType) OutputBlock {
+	return &outputBlock{
 		node: node{
 			name: "#output-expression",
 		},
@@ -25,11 +27,11 @@ func NewOutputExpression(key string, typ expressions.ExpressionType) OutputExpre
 	}
 }
 
-func (o *outputExpression) TextContent() string {
+func (o *outputBlock) TextContent() string {
 	return ""
 }
 
-func (o *outputExpression) OuterHTML() string {
+func (o *outputBlock) OuterHTML() string {
 	var buf bytes.Buffer
 	buf.WriteString("{")
 	buf.WriteString(o.key)
@@ -41,15 +43,15 @@ func (o *outputExpression) OuterHTML() string {
 	return buf.String()
 }
 
-func (o *outputExpression) Children() []Node {
+func (o *outputBlock) Children() []Node {
 	return []Node{}
 }
 
-func (o *outputExpression) Append(children ...Node) {
+func (o *outputBlock) Append(children ...Node) {
 	// no op
 }
 
-func (o *outputExpression) String() string {
+func (o *outputBlock) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("{\"name\": \"#output-expression\", \"key\": \"")
 	buf.WriteString(o.key)
@@ -59,4 +61,12 @@ func (o *outputExpression) String() string {
 	}
 	buf.WriteString("}")
 	return buf.String()
+}
+
+func (o *outputBlock) Key() string {
+	return o.key
+}
+
+func (o *outputBlock) ExpressionType() expressions.ExpressionType {
+	return o.typ
 }

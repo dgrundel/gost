@@ -11,6 +11,7 @@ type ConditionalBlock interface {
 	Condition() expressions.BooleanExpression
 	SetNext(ConditionalBlock)
 	Next() ConditionalBlock
+	IsConditionalBlock() bool
 }
 
 type conditionalBlock struct {
@@ -83,4 +84,8 @@ func (e *conditionalBlock) String() string {
 		condStr = e.condition.String()
 	}
 	return "{\"name\": \"#conditional-block\", \"condition\": \"" + condStr + "\", \"next\": " + nextStr + "}"
+}
+
+func (e *conditionalBlock) IsConditionalBlock() bool {
+	return true
 }

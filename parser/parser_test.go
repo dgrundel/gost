@@ -194,11 +194,11 @@ func TestParseExpressions(t *testing.T) {
 				<img src={imgSrc: string} alt="A photo of {name: string}">
 			</div>`,
 			expected: `<div>
-				<img src={imgSrc:string} alt="A photo of {name: string}">
+				<img src={imgSrc:string} alt="A photo of {name:string}">
 			</div>`,
 			types: map[string]expressions.ExpressionType{
 				"imgSrc": expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
-				// "name":   expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
+				"name":   expressions.NewExpressionType(expressions.ExpressionBaseTypeString, "", expressions.ExpressionBaseTypeString),
 			},
 		}, {
 			name: "spread attributes",
