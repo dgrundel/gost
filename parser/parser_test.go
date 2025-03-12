@@ -190,6 +190,9 @@ func TestParseExpressions(t *testing.T) {
 			html: `<div>
 				{if qty > 0: int}You have {qty} item(s).{/if}
 			</div>`,
+			expected: `<div>
+				{if qty > 0:int}You have {qty} item(s).{/if}
+			</div>`,
 		}, {
 			name: "if...else (1)",
 			html: `<div>

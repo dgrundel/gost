@@ -2,19 +2,20 @@ package nodes
 
 import (
 	"bytes"
+	"gost/parser/expressions"
 )
 
 type ConditionalBlock interface {
 	Node
-	SetCondition(string)
-	Condition() string
+	SetCondition(expressions.BooleanExpression)
+	Condition() expressions.BooleanExpression
 	SetNext(ConditionalBlock)
 	Next() ConditionalBlock
 }
 
 type conditionalBlock struct {
 	node
-	condition string // TODO: make this an expression
+	condition expressions.BooleanExpression
 	next      ConditionalBlock
 }
 
@@ -22,11 +23,11 @@ func NewConditionalBlock() ConditionalBlock {
 	return &conditionalBlock{}
 }
 
-func (e *conditionalBlock) SetCondition(condition string) {
+func (e *conditionalBlock) SetCondition(condition expressions.BooleanExpression) {
 	e.condition = condition
 }
 
-func (e *conditionalBlock) Condition() string {
+func (e *conditionalBlock) Condition() expressions.BooleanExpression {
 	return e.condition
 }
 
@@ -43,7 +44,7 @@ func (e *conditionalBlock) OuterHTML() string {
 	var buf bytes.Buffer
 
 	buf.WriteString("{if ")
-	buf.WriteString(e.condition)
+	buf.WriteString(e.condition.String())
 	buf.WriteString("}")
 
 	for _, child := range e.children {
@@ -52,9 +53,9 @@ func (e *conditionalBlock) OuterHTML() string {
 
 	next := e.next
 	for next != nil {
-		if next.Condition() != "" {
+		if next.Condition() != nil {
 			buf.WriteString("{else if ")
-			buf.WriteString(next.Condition())
+			buf.WriteString(next.Condition().String())
 			buf.WriteString("}")
 		} else {
 			buf.WriteString("{else}")
@@ -77,5 +78,9 @@ func (e *conditionalBlock) String() string {
 	if e.next != nil {
 		nextStr = e.next.String()
 	}
-	return "{\"name\": \"#conditional-block\", \"condition\": \"" + e.condition + "\", \"next\": " + nextStr + "}"
+	var condStr string
+	if e.condition != nil {
+		condStr = e.condition.String()
+	}
+	return "{\"name\": \"#conditional-block\", \"condition\": \"" + condStr + "\", \"next\": " + nextStr + "}"
 }

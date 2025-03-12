@@ -744,11 +744,22 @@ func handleIfConditionalExpression(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
 	case r == '}':
-		condition := ctx.Buf.String()
-		expr := nodes.NewConditionalBlock()
-		expr.SetCondition(condition)
-		ctx.Parent.Append(expr)
-		ctx.Parent = expr
+		str := ctx.Buf.String()
+		boolExpr, types, err := expressions.ParseBooleanExpression(str)
+		if err != nil {
+			return parseErr(ctx, "invalid if conditional expression: "+str)
+		}
+		for key, typ := range types {
+			err := ctx.Document.AddDeclaredType(key, typ)
+			if err != nil {
+				return parseErr(ctx, err.Error())
+			}
+		}
+
+		block := nodes.NewConditionalBlock()
+		block.SetCondition(boolExpr)
+		ctx.Parent.Append(block)
+		ctx.Parent = block
 		ctx.State = Data
 		ctx.Buf.Reset()
 	default:
@@ -772,11 +783,21 @@ func handleElseConditionalExpression(ctx *parseContext) error {
 		if !ok {
 			return parseErr(ctx, "mismatched else expression")
 		}
-		expr := nodes.NewConditionalBlock()
-		ifexpr.SetNext(expr)
-		condition := ctx.Buf.String()
-		expr.SetCondition(condition)
-		ctx.Parent = expr
+		block := nodes.NewConditionalBlock()
+		ifexpr.SetNext(block)
+		str := ctx.Buf.String()
+		boolExpr, types, err := expressions.ParseBooleanExpression(str)
+		if err != nil {
+			return parseErr(ctx, "invalid else conditional expression: "+str)
+		}
+		for key, typ := range types {
+			err := ctx.Document.AddDeclaredType(key, typ)
+			if err != nil {
+				return parseErr(ctx, err.Error())
+			}
+		}
+		block.SetCondition(boolExpr)
+		ctx.Parent = block
 		ctx.Buf.Reset()
 		ctx.State = Data
 	default:
