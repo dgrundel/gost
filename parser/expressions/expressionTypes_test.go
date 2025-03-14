@@ -143,12 +143,12 @@ func TestExpressionType_String(t *testing.T) {
 		{
 			name: "map[string, int]",
 			expr: NewExpressionType(ExpressionBaseTypeMap, ExpressionBaseTypeString, ExpressionBaseTypeInt),
-			want: "map[string, int]",
+			want: "map[string,int]",
 		},
 		{
 			name: "map[int, bool]",
 			expr: NewExpressionType(ExpressionBaseTypeMap, ExpressionBaseTypeInt, ExpressionBaseTypeBool),
-			want: "map[int, bool]",
+			want: "map[int,bool]",
 		},
 	}
 

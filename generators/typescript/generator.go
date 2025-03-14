@@ -6,6 +6,7 @@ import (
 	"gost/parser/nodes"
 	"gost/parser/nodes/attributes"
 	"io"
+	"strings"
 )
 
 func Generate(node nodes.Node, w io.Writer) error {
@@ -33,12 +34,39 @@ func writeString(w io.Writer, s string) error {
 }
 
 func generateDocument(n nodes.Document, w io.Writer) error {
-	writeString(w, "export const render = (data: any) => (`")
+	generateHelpers(w)
+
+	typeName := "model"
+	renderFuncName := "render"
+	generateType(typeName, n.GetDeclaredTypes(), w)
+
+	var fields []string
+	for name := range n.GetDeclaredTypes() {
+		fields = append(fields, name)
+	}
+
+	writeString(w, "\nexport const ")
+	writeString(w, renderFuncName)
+	writeString(w, " = ({")
+	writeString(w, strings.Join(fields, ", "))
+	writeString(w, "}: ")
+	writeString(w, typeName)
+	writeString(w, ") => (`")
+
 	for _, child := range n.Children() {
 		Generate(child, w)
 	}
 	writeString(w, "`);")
 	return nil
+}
+
+func generateHelpers(w io.Writer) {
+	writeString(w, `const encoder = document.createElement('div');
+const htmlEncode = (value: string) => {
+	encoder.textContent = value;
+	return encoder.innerHTML;
+};
+`)
 }
 
 func generateElement(n nodes.Element, w io.Writer) error {
@@ -50,8 +78,9 @@ func generateElement(n nodes.Element, w io.Writer) error {
 		writeString(w, key)
 
 		if value != nil && !value.IsEmpty() {
-			writeString(w, "=")
+			writeString(w, "=\"${htmlEncode(`")
 			generateAttributeValue(value, w)
+			writeString(w, "`)}\"")
 		}
 
 		return true
@@ -60,7 +89,9 @@ func generateElement(n nodes.Element, w io.Writer) error {
 	spread := n.Attributes().GetSpreadAttribute()
 	if spread != nil && !spread.IsEmpty() {
 		writeString(w, " ")
-		writeString(w, spread.OuterHTML())
+		writeString(w, "${[...Object.entries(")
+		writeString(w, spread.Key())
+		writeString(w, ")].map(([k, v]) => (`${k}=\"${htmlEncode(v)}\"`)).join(' ')}")
 	}
 
 	writeString(w, ">")
@@ -85,13 +116,13 @@ func generateText(n nodes.TextNode, w io.Writer) error {
 }
 
 func generateLoopBlock(n nodes.LoopBlock, w io.Writer) error {
-	writeString(w, "${(")
+	writeString(w, "${[...(Array.isArray(")
 	writeString(w, n.ItemsKey())
-	writeString(w, " instanceof Array ? ")
+	writeString(w, ") ? ")
 	writeString(w, n.ItemsKey())
 	writeString(w, ".entries() : Object.entries(")
 	writeString(w, n.ItemsKey())
-	writeString(w, ")).forEach(([")
+	writeString(w, "))].map(([")
 	writeString(w, n.IndexKey())
 	writeString(w, ", ")
 	writeString(w, n.ValueKey())
@@ -100,7 +131,7 @@ func generateLoopBlock(n nodes.LoopBlock, w io.Writer) error {
 	for _, child := range n.Children() {
 		Generate(child, w)
 	}
-	writeString(w, "`))")
+	writeString(w, "`)).join('')}")
 	return nil
 }
 
@@ -167,12 +198,52 @@ func generateAttributeValue(value attributes.AttributeValue, w io.Writer) error 
 		for _, value := range v.Values() {
 			generateAttributeValue(value, w)
 		}
-	case attributes.AttributeValueSpread:
-		// TODO
 	case attributes.AttributeValueExpression:
-		// TODO
+		writeString(w, "${")
+		writeString(w, v.Key())
+		writeString(w, "}")
 	default:
 		return fmt.Errorf("unsupported attribute value type: %T", v)
 	}
 	return nil
+}
+
+func generateType(name string, t map[string]expressions.ExpressionType, w io.Writer) error {
+	writeString(w, "export interface ")
+	writeString(w, name)
+	writeString(w, " {\n")
+	for name, t := range t {
+		writeString(w, name)
+		writeString(w, ": ")
+		writeString(w, getTypeScriptType(t))
+		writeString(w, ";\n")
+	}
+	writeString(w, "}")
+	return nil
+}
+
+func getTypeScriptType(t expressions.ExpressionType) string {
+	if t.BaseType() == expressions.ExpressionBaseTypeArray {
+		return getTypeScriptBaseType(t.ValueType()) + "[]"
+	}
+
+	if t.BaseType() == expressions.ExpressionBaseTypeMap {
+		return "Record<" + getTypeScriptBaseType(t.KeyType()) + "," + getTypeScriptBaseType(t.ValueType()) + ">"
+	}
+
+	return getTypeScriptBaseType(t.BaseType())
+}
+
+func getTypeScriptBaseType(t expressions.ExpressionBaseType) string {
+	switch t {
+	case expressions.ExpressionBaseTypeString:
+		return "string"
+	case expressions.ExpressionBaseTypeInt:
+		return "number"
+	case expressions.ExpressionBaseTypeFloat:
+		return "number"
+	case expressions.ExpressionBaseTypeBool:
+		return "boolean"
+	}
+	return ""
 }
