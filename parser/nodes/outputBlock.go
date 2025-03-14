@@ -20,7 +20,7 @@ type outputBlock struct {
 func NewOutputExpression(key string, typ expressions.ExpressionType) OutputBlock {
 	return &outputBlock{
 		node: node{
-			name: "#output-expression",
+			name: "#output",
 		},
 		key: key,
 		typ: typ,
@@ -53,7 +53,7 @@ func (o *outputBlock) Append(children ...Node) {
 
 func (o *outputBlock) String() string {
 	var buf bytes.Buffer
-	buf.WriteString("{\"name\": \"#output-expression\", \"key\": \"")
+	buf.WriteString("{\"name\": \"#output\", \"key\": \"")
 	buf.WriteString(o.key)
 	buf.WriteString("\", \"typ\": \"")
 	if o.typ != nil {

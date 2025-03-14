@@ -311,7 +311,7 @@ func TestParseExpressions(t *testing.T) {
 					}
 				}
 
-				t.Log(document.String())
+				// t.Log(document.String())
 			}
 		})
 	}

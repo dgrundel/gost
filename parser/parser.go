@@ -735,8 +735,7 @@ func handleEndExpression(ctx *parseContext) error {
 			break
 		}
 		if str == "for" {
-			_, ok := ctx.Parent.(nodes.LoopBlock)
-			if !ok {
+			if ctx.Parent.Name() != "#loop" {
 				return parseErr(ctx, "mismatched end expression: "+str)
 			}
 			ctx.Parent = ctx.Parent.Parent()
@@ -845,7 +844,6 @@ func handleForLoopExpression(ctx *parseContext) error {
 			}
 		}
 		expr := nodes.NewLoopBlock(indexKey, itemKey, collectionKey, typ)
-
 		ctx.Parent.Append(expr)
 		ctx.Parent = expr
 		ctx.Buf.Reset()

@@ -7,6 +7,10 @@ import (
 
 type LoopBlock interface {
 	Node
+	IndexKey() string
+	ValueKey() string
+	ItemsKey() string
+	ExpressionType() expressions.ExpressionType
 }
 
 type loopBlock struct {
@@ -19,6 +23,9 @@ type loopBlock struct {
 
 func NewLoopBlock(indexKey, valueKey, itemsKey string, typ expressions.ExpressionType) LoopBlock {
 	return &loopBlock{
+		node: node{
+			name: "#loop",
+		},
 		indexKey: indexKey,
 		valueKey: valueKey,
 		itemsKey: itemsKey,
@@ -48,9 +55,13 @@ func (e *loopBlock) OuterHTML() string {
 	return buf.String()
 }
 
+func (e *loopBlock) TextContent() string {
+	return ""
+}
+
 func (e *loopBlock) String() string {
 	var buf bytes.Buffer
-	buf.WriteString("{\"name\": \"#loop-block\", \"indexKey\": \"")
+	buf.WriteString("{\"name\": \"#loop\", \"indexKey\": \"")
 	buf.WriteString(e.indexKey)
 	buf.WriteString("\", \"valueKey\": \"")
 	buf.WriteString(e.valueKey)
@@ -66,4 +77,20 @@ func (e *loopBlock) String() string {
 	}
 	buf.WriteString("]}")
 	return buf.String()
+}
+
+func (e *loopBlock) IndexKey() string {
+	return e.indexKey
+}
+
+func (e *loopBlock) ValueKey() string {
+	return e.valueKey
+}
+
+func (e *loopBlock) ItemsKey() string {
+	return e.itemsKey
+}
+
+func (e *loopBlock) ExpressionType() expressions.ExpressionType {
+	return e.typ
 }

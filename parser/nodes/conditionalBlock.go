@@ -21,7 +21,11 @@ type conditionalBlock struct {
 }
 
 func NewConditionalBlock() ConditionalBlock {
-	return &conditionalBlock{}
+	return &conditionalBlock{
+		node: node{
+			name: "#conditional",
+		},
+	}
 }
 
 func (e *conditionalBlock) SetCondition(condition expressions.BooleanExpression) {
@@ -83,7 +87,7 @@ func (e *conditionalBlock) String() string {
 	if e.condition != nil {
 		condStr = e.condition.String()
 	}
-	return "{\"name\": \"#conditional-block\", \"condition\": \"" + condStr + "\", \"next\": " + nextStr + "}"
+	return "{\"name\": \"#conditional\", \"condition\": \"" + condStr + "\", \"next\": " + nextStr + "}"
 }
 
 func (e *conditionalBlock) IsConditionalBlock() bool {
