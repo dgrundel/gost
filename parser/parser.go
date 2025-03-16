@@ -24,7 +24,9 @@ const (
 	TagName                    ParseState = "TagName"
 	SelfClosingStartTag        ParseState = "SelfClosingStartTag"
 	BeforeAttributeName        ParseState = "BeforeAttributeName"
+	InElementExpression        ParseState = "InElementExpression"
 	SpreadAttribute            ParseState = "SpreadAttribute"
+	BindExpression             ParseState = "BindExpression"
 	AttributeName              ParseState = "AttributeName"
 	AfterAttributeName         ParseState = "AfterAttributeName"
 	BeforeAttributeValue       ParseState = "BeforeAttributeValue"
@@ -61,6 +63,7 @@ type tag struct {
 	attrName   strings.Builder
 	attrValue  strings.Builder
 	attributes attributes.Attributes
+	bind       string
 	endTag     bool
 }
 
@@ -88,7 +91,9 @@ var _parseStateHandlers = map[ParseState](func(ctx *parseContext) error){
 	TagName:                    handleTagName,
 	SelfClosingStartTag:        handleSelfClosingStartTag,
 	BeforeAttributeName:        handleBeforeAttributeName,
+	InElementExpression:        handleInElementExpression,
 	SpreadAttribute:            handleSpreadAttribute,
+	BindExpression:             handleBindExpression,
 	AttributeName:              handleAttributeName,
 	AfterAttributeName:         handleAfterAttributeName,
 	BeforeAttributeValue:       handleBeforeAttributeValue,
@@ -187,7 +192,7 @@ func handleTagName(ctx *parseContext) error {
 	case unicode.IsSpace(r):
 		ctx.State = BeforeAttributeName
 	case r == '{':
-		ctx.State = SpreadAttribute
+		ctx.State = InElementExpression
 	case r == '/':
 		ctx.State = SelfClosingStartTag
 	case r == '>':
@@ -230,7 +235,7 @@ func handleBeforeAttributeName(ctx *parseContext) error {
 	case unicode.IsSpace(r):
 		break
 	case r == '{':
-		ctx.State = SpreadAttribute
+		ctx.State = InElementExpression
 	case r == '/':
 		ctx.State = SelfClosingStartTag
 	case r == '>':
@@ -254,6 +259,28 @@ func handleBeforeAttributeName(ctx *parseContext) error {
 	return nil
 }
 
+func handleInElementExpression(ctx *parseContext) error {
+	r := ctx.Rune
+	switch {
+	case r == '}':
+		return parseErr(ctx, "invalid in-element expression")
+	case r == '.':
+		ctx.Buf.WriteRune(r)
+		if ctx.Buf.Len() == 3 && ctx.Buf.String() == "..." {
+			ctx.State = SpreadAttribute
+		}
+	case r == ':':
+		ctx.Buf.WriteRune(r)
+		if ctx.Buf.Len() == 5 && ctx.Buf.String() == "bind:" {
+			ctx.Buf.Reset()
+			ctx.State = BindExpression
+		}
+	default:
+		ctx.Buf.WriteRune(r)
+	}
+	return nil
+}
+
 func handleSpreadAttribute(ctx *parseContext) error {
 	r := ctx.Rune
 	switch {
@@ -268,6 +295,24 @@ func handleSpreadAttribute(ctx *parseContext) error {
 			ctx.Document.AddDeclaredType(spread.Key(), spread.ExpressionType())
 		}
 
+		ctx.Buf.Reset()
+		ctx.State = AfterAttributeValueQuoted
+	default:
+		ctx.Buf.WriteRune(r)
+	}
+	return nil
+}
+
+func handleBindExpression(ctx *parseContext) error {
+	r := ctx.Rune
+	switch {
+	case unicode.IsSpace(r):
+		break
+	case r == '}':
+		if ctx.Buf.Len() == 0 {
+			return parseErr(ctx, "empty bind expression")
+		}
+		ctx.Tag.bind = ctx.Buf.String()
 		ctx.Buf.Reset()
 		ctx.State = AfterAttributeValueQuoted
 	default:
@@ -966,6 +1011,10 @@ func applyTag(ctx *parseContext, void bool) (nodes.Element, error) {
 		spread := ctx.Tag.attributes.GetSpreadAttribute()
 		if spread != nil && !spread.IsEmpty() {
 			elem.Attributes().SetSpreadAttribute(spread)
+		}
+
+		if ctx.Tag.bind != "" {
+			elem.SetBind(ctx.Tag.bind)
 		}
 
 		ctx.Parent.Append(elem)

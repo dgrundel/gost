@@ -278,6 +278,28 @@ func TestParseExpressions(t *testing.T) {
 					<li data-index={i}>{item.name}</li>
 				{/for}
 			</ul>`,
+		}, {
+			name: "binding expression",
+			html: `<div>
+				<button {bind:btn}>Click me</button>
+				<script type="ts">
+					export function mount(btn: HTMLButtonElement) {
+						btn.addEventListener('click', () => {
+							alert('clicked');
+						});
+					}
+				</script>
+			</div>`,
+			expected: `<div>
+				<button data-bind-id="btn">Click me</button>
+				<script type="ts">
+					export function mount(btn: HTMLButtonElement) {
+						btn.addEventListener('click', () => {
+							alert('clicked');
+						});
+					}
+				</script>
+			</div>`,
 		},
 	}
 

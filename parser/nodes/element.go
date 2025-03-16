@@ -28,12 +28,15 @@ type Element interface {
 	Node
 	IsVoid() bool
 	Attributes() attributes.Attributes
+	SetBind(bind string)
+	Bind() string
 }
 
 type element struct {
 	node
 	void       bool
 	attributes attributes.Attributes
+	bind       string
 }
 
 func NewElement(name string, void bool) Element {
@@ -73,6 +76,12 @@ func (t *element) OuterHTML() string {
 		buf.WriteString(spread.OuterHTML())
 	}
 
+	if t.bind != "" {
+		buf.WriteString(" data-bind-id=\"")
+		buf.WriteString(t.bind)
+		buf.WriteByte('"')
+	}
+
 	buf.WriteByte('>')
 
 	if t.void {
@@ -92,6 +101,14 @@ func (t *element) OuterHTML() string {
 
 func (t *element) Attributes() attributes.Attributes {
 	return t.attributes
+}
+
+func (t *element) SetBind(bind string) {
+	t.bind = bind
+}
+
+func (t *element) Bind() string {
+	return t.bind
 }
 
 func (t *element) String() string {
