@@ -213,6 +213,7 @@ func generateType(name string, t map[string]expressions.ExpressionType, w io.Wri
 	writeString(w, name)
 	writeString(w, " {\n")
 	for name, t := range t {
+		writeString(w, "\t")
 		writeString(w, name)
 		writeString(w, ": ")
 		writeString(w, getTypeScriptType(t))

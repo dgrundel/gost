@@ -1,0 +1,28 @@
+<img {...logo: map[string,string]}>
+
+<div>
+    {if qty: int == 1}
+        You have {qty} item.
+    {else if qty > 1000}
+        You have way too many items.
+    {else}
+        You have {qty} items.
+    {/if}
+</div>
+
+<ul>
+    {for i, item in items: string[]}
+        <li data-index={i}>{item}</li>
+    {/for}
+</ul>
+
+<div>
+    <button {bind:addToCart}>Click me</button>
+    <script type="ts">
+        export function mount(addToCart: HTMLButtonElement) {
+            btn.addEventListener('click', () => {
+                alert('clicked');
+            });
+        }
+    </script>
+</div>
