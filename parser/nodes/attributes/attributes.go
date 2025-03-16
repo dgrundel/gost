@@ -3,7 +3,7 @@ package attributes
 import (
 	"bytes"
 	"fmt"
-	"gost/parser/expressions"
+	"guts/parser/expressions"
 	"strings"
 )
 

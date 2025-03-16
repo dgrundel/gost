@@ -7,7 +7,7 @@ test:
 	go test ./...
 
 clean:
-	rm -f gost
+	rm -f guts
 
 integ: build
-	./gost integ/**/*.guts
+	./guts integ/**/*.guts

@@ -2,7 +2,7 @@ package nodes
 
 import (
 	"bytes"
-	"gost/parser/nodes/attributes"
+	"guts/parser/nodes/attributes"
 	"strings"
 )
 

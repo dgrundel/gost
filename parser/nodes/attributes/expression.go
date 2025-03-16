@@ -1,6 +1,6 @@
 package attributes
 
-import "gost/parser/expressions"
+import "guts/parser/expressions"
 
 type AttributeValueExpression interface {
 	AttributeValue

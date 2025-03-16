@@ -2,7 +2,7 @@ package attributes
 
 import (
 	"bytes"
-	"gost/parser/expressions"
+	"guts/parser/expressions"
 )
 
 type AttributeValueComposite interface {

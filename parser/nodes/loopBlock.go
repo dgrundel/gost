@@ -2,7 +2,7 @@ package nodes
 
 import (
 	"bytes"
-	"gost/parser/expressions"
+	"guts/parser/expressions"
 )
 
 type LoopBlock interface {

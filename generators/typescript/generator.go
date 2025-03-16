@@ -2,9 +2,9 @@ package typescript
 
 import (
 	"fmt"
-	"gost/parser/expressions"
-	"gost/parser/nodes"
-	"gost/parser/nodes/attributes"
+	"guts/parser/expressions"
+	"guts/parser/nodes"
+	"guts/parser/nodes/attributes"
 	"io"
 	"strings"
 )

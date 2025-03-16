@@ -2,7 +2,7 @@ package attributes
 
 import (
 	"fmt"
-	"gost/parser/expressions"
+	"guts/parser/expressions"
 	"strings"
 )
 

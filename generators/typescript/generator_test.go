@@ -2,7 +2,7 @@ package typescript
 
 import (
 	"bytes"
-	"gost/parser"
+	"guts/parser"
 	"strings"
 	"testing"
 

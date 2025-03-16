@@ -2,7 +2,7 @@ package parser
 
 import (
 	"bytes"
-	"gost/parser/expressions"
+	"guts/parser/expressions"
 	"os"
 	"strings"
 	"testing"
